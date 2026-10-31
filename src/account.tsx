@@ -1,0 +1,594 @@
+import { useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "./api";
+import { download } from "./engines";
+import { tools, pricing } from "./catalog";
+import ProWorkspace from "./workspace";
+export default function Account({ page }: { page: string }) {
+  const client = useQueryClient();
+  const [params] = useSearchParams();
+  const me = useQuery({ queryKey: ["me"], queryFn: () => api("/me") });
+  const [message, setMessage] = useState("");
+  const [devLink, setDevLink] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function action(fn: () => Promise<any>) {
+    setBusy(true);
+    setMessage("");
+    try {
+      const data = await fn();
+      setMessage(data?.message || "Done");
+      if (data?.developmentLink) setDevLink(data.developmentLink);
+      await client.invalidateQueries();
+      return data;
+    } catch (e) {
+      setMessage((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const auth = [
+    "login",
+    "register",
+    "forgot-password",
+    "reset-password",
+    "verify-email",
+  ].includes(page);
+  if (auth)
+    return (
+      <section className="form-page">
+        <div className="eyebrow">YOUR RANDOMTOOLS ACCOUNT</div>
+        <h1>
+          {
+            {
+              login: "Welcome back.",
+              register: "Make yourself at home.",
+              "forgot-password": "Forgot your password?",
+              "reset-password": "A fresh start.",
+              "verify-email": "Verify your email.",
+            }[page]
+          }
+        </h1>
+        <p>
+          {page === "register"
+            ? "Save your workspace. Keep the essentials free."
+            : page === "verify-email"
+              ? "Confirm this verification link to activate your account."
+              : "Your tools are right where you left them."}
+        </p>
+        <form
+          className="panel"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const b = Object.fromEntries(new FormData(e.currentTarget));
+            if (page === "reset-password" || page === "verify-email")
+              b.token = params.get("token") || "";
+            void action(async () => {
+              const data = await api("/auth/" + page, b);
+              if (page === "login") window.location.assign("/dashboard");
+              return data;
+            });
+          }}
+        >
+          {page === "register" && (
+            <label>
+              Display name
+              <input name="name" autoComplete="name" required maxLength={80} />
+            </label>
+          )}
+          {["login", "register", "forgot-password"].includes(page) && (
+            <label>
+              Email address
+              <input
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                maxLength={254}
+              />
+            </label>
+          )}
+          {["login", "register", "reset-password"].includes(page) && (
+            <>
+              <label htmlFor="account-password">
+                Password
+                <input
+                  id="account-password"
+                  aria-describedby="password-help"
+                  name="password"
+                  type="password"
+                  autoComplete={
+                    page === "login" ? "current-password" : "new-password"
+                  }
+                  minLength={12}
+                  maxLength={128}
+                  required
+                />
+              </label>
+              <small id="password-help">
+                At least 12 characters. Password managers welcome.
+              </small>
+            </>
+          )}
+          <button disabled={busy} className="primary">
+            {busy
+              ? "Please wait…"
+              : page === "verify-email"
+                ? "Verify email"
+                : page === "login"
+                  ? "Log in"
+                  : page === "register"
+                    ? "Create account"
+                    : "Continue"}
+          </button>
+          {message && <p role="status">{message}</p>}
+          {devLink && (
+            <p className="error">
+              Development adapter — no email sent.{" "}
+              <a href={devLink}>Open testing link</a>
+            </p>
+          )}
+        </form>
+        <div className="links">
+          <Link to="/login">Log in</Link>
+          <Link to="/register">Create account</Link>
+          <Link to="/forgot-password">Reset password</Link>
+        </div>
+      </section>
+    );
+  if (me.isPending) return <p className="loading">Loading account…</p>;
+  if (!me.data?.user)
+    return (
+      <section className="form-page">
+        <h1>Your workspace awaits.</h1>
+        <p>
+          {me.error
+            ? "The account API is unavailable. Start the local Worker to use accounts."
+            : "Sign in to access your account."}
+        </p>
+        <Link className="primary" to="/login">
+          Log in
+        </Link>
+      </section>
+    );
+  const user = me.data.user;
+  return (
+    <section className="dashboard">
+      <div className="eyebrow">
+        YOUR WORKSPACE · {me.data.pro ? "PRO" : "FREE"}
+      </div>
+      <h1>
+        {page === "settings"
+          ? "Account settings"
+          : page === "subscription"
+            ? "Your membership"
+            : page === "admin"
+              ? "Administration"
+              : `Hello, ${user.name}.`}
+      </h1>
+      <div className="tabs">
+        <Link className="secondary" to="/dashboard">
+          Workspace
+        </Link>
+        <Link className="secondary" to="/settings">
+          Settings
+        </Link>
+        <Link className="secondary" to="/subscription">
+          Membership
+        </Link>
+        {user.role === "admin" && (
+          <Link className="secondary" to="/admin">
+            Admin
+          </Link>
+        )}
+        <button
+          onClick={() =>
+            void action(async () => {
+              const r = await api("/auth/logout", {});
+              window.location.assign("/");
+              return r;
+            })
+          }
+        >
+          Log out
+        </button>
+      </div>
+      {message && (
+        <p role="status" className="privacy">
+          {message}
+        </p>
+      )}
+      {busy && <p role="status">Working…</p>}
+      {page === "settings" ? (
+        <div className="dashboard-grid">
+          <div className="panel">
+            <h2>Profile</h2>
+            <p>
+              {user.email} · {user.verified ? "Verified" : "Unverified"}
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void action(() =>
+                  api(
+                    "/account",
+                    { name: new FormData(e.currentTarget).get("name") },
+                    "PATCH",
+                  ),
+                );
+              }}
+            >
+              <label>
+                Display name
+                <input
+                  name="name"
+                  defaultValue={user.name}
+                  required
+                  maxLength={80}
+                />
+              </label>
+              <button className="primary">Save profile</button>
+            </form>
+          </div>
+          <div className="panel">
+            <h2>Change password</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void action(() =>
+                  api(
+                    "/account/password",
+                    Object.fromEntries(new FormData(e.currentTarget)),
+                  ),
+                );
+              }}
+            >
+              <label>
+                Current password
+                <input
+                  name="currentPassword"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                />
+              </label>
+              <label>
+                New password
+                <input
+                  name="password"
+                  type="password"
+                  minLength={12}
+                  maxLength={128}
+                  required
+                  autoComplete="new-password"
+                />
+              </label>
+              <button className="secondary">Change and revoke sessions</button>
+            </form>
+          </div>
+          <div className="panel">
+            <h2>Your data</h2>
+            <p>
+              Export your profile, preferences, presets, history and membership
+              records.
+            </p>
+            <button
+              className="secondary"
+              onClick={() =>
+                void action(async () => {
+                  download(
+                    JSON.stringify(await api("/account/export"), null, 2),
+                    "randomtools-account.json",
+                  );
+                  return { message: "Export downloaded" };
+                })
+              }
+            >
+              Download data export
+            </button>
+          </div>
+          <div className="panel">
+            <h2>Delete account</h2>
+            <p>
+              Permanently deletes your account, sessions and saved work. This
+              does not cancel payments at Ko-fi.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void action(async () => {
+                  const r = await api(
+                    "/account",
+                    Object.fromEntries(new FormData(e.currentTarget)),
+                    "DELETE",
+                  );
+                  window.location.assign("/");
+                  return r;
+                });
+              }}
+            >
+              <label>
+                Confirm password
+                <input
+                  name="password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                />
+              </label>
+              <label>
+                <input type="checkbox" required /> I understand that deletion is
+                permanent.
+              </label>
+              <button className="secondary">Permanently delete account</button>
+            </form>
+          </div>
+        </div>
+      ) : page === "subscription" ? (
+        <Membership action={action} />
+      ) : page === "admin" ? (
+        user.role === "admin" ? (
+          <Admin action={action} />
+        ) : (
+          <p role="alert">Administrator access required.</p>
+        )
+      ) : me.data.pro ? (
+        <ProWorkspace action={action} busy={busy} />
+      ) : (
+        <div className="panel" style={{ marginTop: 24 }}>
+          <h2>Your essentials, ready to go.</h2>
+          <p>
+            All 18 tools are free. Favourites and your theme are saved on this
+            device. Pro adds a synced workspace, saved presets and workflows.
+          </p>
+          <Link className="primary" to="/tools">
+            Explore free tools
+          </Link>{" "}
+          <Link className="secondary" to="/pro">
+            Explore Pro
+          </Link>
+        </div>
+      )}
+    </section>
+  );
+}
+type Action = (fn: () => Promise<any>) => Promise<any>;
+function Membership({ action }: { action: Action }) {
+  const status = useQuery({
+    queryKey: ["subscription"],
+    queryFn: () => api("/subscription"),
+  });
+  return (
+    <div className="dashboard-grid" style={{ marginTop: 24 }}>
+      <div className="panel">
+        <h2>{status.data?.pro ? "Pro is active" : "Free membership"}</h2>
+        <p>
+          Live checkout is disabled. Proposed Pro pricing: A$
+          {pricing.monthly.toFixed(2)} AUD monthly. Annual purchasing is
+          unavailable.
+        </p>
+        {status.data?.subscriptions?.map((s: any, i: number) => (
+          <p key={i}>
+            Paid through {new Date(s.paid_through * 1000).toLocaleString()} ·{" "}
+            {s.source}
+          </p>
+        ))}
+        <a href="https://ko-fi.com/itzrealfisheryt" className="secondary">
+          View Ko-fi creator page ↗
+        </a>
+        <p>
+          This link does not activate RandomTools checkout. Do not pay for
+          access until the integration has launched.
+        </p>
+      </div>
+      <div className="panel">
+        <h2>Link an existing membership</h2>
+        <p>
+          A transaction ID starts a pending claim. An administrator must
+          independently verify ownership and the authenticated payment before
+          granting access. Email matching alone is never sufficient.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void action(() =>
+              api("/subscription/claim", {
+                transactionId: new FormData(e.currentTarget).get(
+                  "transactionId",
+                ),
+              }),
+            );
+          }}
+        >
+          <label>
+            Ko-fi transaction ID
+            <input
+              name="transactionId"
+              required
+              minLength={3}
+              maxLength={100}
+            />
+          </label>
+          <button className="primary">Submit for verification</button>
+        </form>
+        {status.data?.claims?.map((c: any) => (
+          <p key={c.id}>
+            Claim {c.id.slice(0, 8)} · {c.status}
+          </p>
+        ))}
+      </div>
+    </div>
+  );
+}
+function Admin({ action }: { action: Action }) {
+  const [search, setSearch] = useState("");
+  const q = useQuery({
+    queryKey: ["admin", search],
+    queryFn: () => api("/admin?search=" + encodeURIComponent(search)),
+  });
+  return (
+    <>
+      <div className="panel" style={{ marginTop: 24 }}>
+        <h2>Overview</h2>
+        <p>
+          {q.data?.stats?.users ?? "—"} registered users ·{" "}
+          {q.data?.stats?.pro ?? "—"} active Pro users
+        </p>
+        <label>
+          Find users
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Name or email"
+          />
+        </label>
+        {q.data?.users?.map((u: any) => (
+          <div key={u.id}>
+            <span>
+              {u.name} · {u.email} · {u.role}
+            </span>
+            <button
+              className="secondary"
+              onClick={() =>
+                void action(() =>
+                  api("/admin/users", { id: u.id, disabled: !u.disabled }),
+                )
+              }
+            >
+              {u.disabled ? "Enable" : "Disable"} account
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="dashboard-grid" style={{ marginTop: 20 }}>
+        <div className="panel">
+          <h2>Membership reconciliation</h2>
+          <p>
+            Verify ownership through an independent support exchange and
+            receipt. A claimant’s knowledge of an ID is insufficient. Confirm
+            the billing period and AUD amount before setting the expiry.
+          </p>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const b = Object.fromEntries(new FormData(e.currentTarget));
+              void action(() =>
+                api("/admin/reconcile", {
+                  claimId: b.claimId,
+                  eventId: b.eventId,
+                  paidThrough: Math.floor(
+                    new Date(String(b.paidThrough)).getTime() / 1000,
+                  ),
+                  ownershipVerified: true,
+                }),
+              );
+            }}
+          >
+            <label>
+              Pending claim ID
+              <input name="claimId" required />
+            </label>
+            <label>
+              Authenticated event ID
+              <input name="eventId" required />
+            </label>
+            <label>
+              Confirmed paid-through date
+              <input name="paidThrough" type="datetime-local" required />
+            </label>
+            <label>
+              <input type="checkbox" required /> I independently verified
+              payment ownership and the paid period.
+            </label>
+            <button className="primary">Reconcile membership</button>
+          </form>
+          <button
+            className="secondary"
+            onClick={() => void action(() => api("/admin/mock-payment", {}))}
+          >
+            Create development mock event
+          </button>
+        </div>
+        <div className="panel">
+          <h2>Tool availability</h2>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const b = new FormData(e.currentTarget);
+              void action(() =>
+                api("/admin/tools", {
+                  tool: b.get("tool"),
+                  enabled: b.get("enabled") === "on",
+                }),
+              );
+            }}
+          >
+            <label>
+              Tool
+              <select name="tool">
+                {tools.map((t) => (
+                  <option value={t.id} key={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <input type="checkbox" name="enabled" defaultChecked /> Enabled
+            </label>
+            <button className="secondary">Save availability</button>
+          </form>
+        </div>
+        <div className="panel">
+          <h2>Subscription overview</h2>
+          {q.data?.subscriptions?.map((s: any) => (
+            <div key={s.id}>
+              <p>
+                {s.user_id} · {s.source}
+                <br />
+                Paid through {new Date(s.paid_through * 1000).toLocaleString()}
+              </p>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void action(() =>
+                    api("/admin/subscriptions/revoke", {
+                      id: s.id,
+                      reason: new FormData(e.currentTarget).get("reason"),
+                    }),
+                  );
+                }}
+              >
+                <label>
+                  Reason
+                  <select name="reason">
+                    <option value="refund">Refund</option>
+                    <option value="dispute">Dispute</option>
+                    <option value="incorrect-link">Incorrect link</option>
+                    <option value="manual">Manual review</option>
+                  </select>
+                </label>
+                <button className="secondary">Revoke paid period</button>
+              </form>
+            </div>
+          ))}
+        </div>
+        {["events", "claims", "audit", "usage"].map((key) => (
+          <div key={key} className="panel">
+            <h2>
+              {key === "events"
+                ? "Payment events"
+                : key === "claims"
+                  ? "Pending claims"
+                  : key === "audit"
+                    ? "Audit logs"
+                    : "Anonymous usage"}
+            </h2>
+            <pre>{JSON.stringify(q.data?.[key] || [], null, 2)}</pre>
+          </div>
+        ))}
+      </div>
+      {q.error && <p role="alert">{q.error.message}</p>}
+    </>
+  );
+}
