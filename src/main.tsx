@@ -6,6 +6,7 @@ import {
   Route,
   Link,
   useLocation,
+  useParams,
 } from "react-router-dom";
 import {
   QueryClient,
@@ -32,6 +33,10 @@ import { api } from "./api";
 import "./style.css";
 const ToolPage = lazy(() => import("./ToolPage"));
 const Account = lazy(() => import("./account"));
+function ToolRoute() {
+  const { id } = useParams();
+  return <ToolPage key={id} />;
+}
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
 });
@@ -45,13 +50,15 @@ function App() {
   const me = useQuery({ queryKey: ["me"], queryFn: () => api("/me") });
   useEffect(() => {
     setMenu(false);
+    const pathname =
+      loc.pathname === "/" ? "/" : loc.pathname.replace(/\/+$/, "");
     const label =
-      tools.find((t) => loc.pathname === "/tools/" + t.id)?.name ||
-      loc.pathname.split("/")[1] ||
+      tools.find((t) => pathname === "/tools/" + t.id)?.name ||
+      pathname.split("/")[1] ||
       "Your everyday toolkit";
     document.title = `${label.charAt(0).toUpperCase() + label.slice(1)} · RandomTools HQ`;
     const description =
-      tools.find((t) => loc.pathname === "/tools/" + t.id)?.description ||
+      tools.find((t) => pathname === "/tools/" + t.id)?.description ||
       `${label} — RandomTools HQ. Useful browser tools with privacy-conscious processing.`;
     document
       .querySelector('meta[name="description"]')
@@ -72,7 +79,7 @@ function App() {
         canonical.rel = "canonical";
         document.head.appendChild(canonical);
       }
-      canonical.href = new URL(loc.pathname, origin).href;
+      canonical.href = new URL(pathname, origin).href;
     }
     window.scrollTo(0, 0);
   }, [loc.pathname]);
@@ -82,7 +89,7 @@ function App() {
   }, [light]);
   return (
     <>
-      <a href="#main-content" className="skip-link">
+      <a href="#main-content" className="skip-link" tabIndex={0}>
         Skip to content
       </a>
       <header>
@@ -134,12 +141,13 @@ function App() {
           <Routes>
             <Route path="/" element={<Directory home />} />
             <Route path="/tools" element={<Directory />} />
-            <Route path="/tools/:id" element={<ToolPage />} />
+            <Route path="/tools/:id" element={<ToolRoute />} />
             <Route path="/pro" element={<Pro />} />
             {[
               "login",
               "register",
               "forgot-password",
+              "resend-verification",
               "reset-password",
               "verify-email",
               "dashboard",
@@ -543,9 +551,13 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
           <h2>Service providers and retention</h2>
           <p>
             Hosting uses Cloudflare. Membership payments are handled by Ko-fi
-            under its own privacy terms. Security and audit records may be
-            retained to prevent abuse. We do not sell personal information.
-            Contact randomtoolshq@gmail.com for access or privacy requests.
+            under its own privacy terms. When configured, Resend receives your
+            email address and one-time verification or reset message for
+            transactional delivery. Audit records are retained for 180 days and
+            aggregate usage counts for 90 days. Saved history follows your
+            selected retention period, with daily cleanup that may lag by up to
+            24 hours. We do not sell personal information. Contact
+            randomtoolshq@gmail.com for access or privacy requests.
           </p>
         </>
       ) : (

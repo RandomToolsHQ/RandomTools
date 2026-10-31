@@ -2,6 +2,8 @@
 
 Canonical SQL: [0001_initial.sql](../migrations/0001_initial.sql). Time values are integer Unix seconds except the aggregate usage day (ISO date). IDs are opaque UUIDs except token digests and provider event/transaction IDs. All application queries bind user values.
 
+[0002_query_indexes.sql](../migrations/0002_query_indexes.sql) adds indexes for token/session expiry, resend lookup, user payment/claim export, audit ordering and rate-limit cleanup. Both migrations are exercised by integration tests and the local restore rehearsal.
+
 | Table | Fields and constraints |
 | --- | --- |
 | users | id PK, email UNIQUE, name, password_hash, role CHECK free/admin, verified, disabled, created_at |

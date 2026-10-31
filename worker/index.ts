@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { tools, pricing } from "../src/catalog";
+import { deliverEmail, emailMode, type EmailEnvironment } from "./email";
+import { readBody, BodyTooLarge } from "./body";
 import {
   digest,
   equal,
@@ -8,7 +10,7 @@ import {
   token,
   verifyPassword,
 } from "./security";
-interface Env {
+interface Env extends EmailEnvironment {
   DB: D1Database;
   APP_ORIGIN: string;
   ENVIRONMENT: string;
@@ -56,11 +58,7 @@ const safeUser = (u: User) => ({
   verified: !!u.verified,
 });
 async function parse(req: Request) {
-  if (Number(req.headers.get("content-length") || 0) > 262144)
-    fail(413, "Request too large");
-  const text = await req.text();
-  if (text.length > 262144) fail(413, "Request too large");
-  return JSON.parse(text);
+  return JSON.parse(await readBody(req, 262144));
 }
 async function rate(env: Env, key: string, limit = 10) {
   await env.DB.prepare("DELETE FROM rate_limits WHERE expires_at < ?")
@@ -103,7 +101,12 @@ async function audit(env: Env, actor: string, action: string, target: string) {
 function cookie(value: string, env: Env, age = 604800) {
   return `rt_session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${age}${env.ENVIRONMENT === "production" ? "; Secure" : ""}`;
 }
-async function issue(env: Env, user: User, kind: "verify" | "reset") {
+async function issue(
+  env: Env,
+  user: User,
+  kind: "verify" | "reset",
+  ctx?: ExecutionContext,
+) {
   const raw = token();
   const table =
     kind === "verify" ? "email_verification_tokens" : "password_reset_tokens";
@@ -115,18 +118,33 @@ async function issue(env: Env, user: User, kind: "verify" | "reset") {
       now() + (kind === "verify" ? 86400 : 1800),
     ),
   ]);
-  if (env.ENVIRONMENT === "development")
+  const link = `${env.APP_ORIGIN}/${kind === "verify" ? "verify-email" : "reset-password"}?token=${raw}`;
+  if (emailMode(env) === "development")
     return {
-      developmentLink: `${env.APP_ORIGIN}/${kind === "verify" ? "verify-email" : "reset-password"}?token=${raw}`,
+      developmentLink: link,
       delivery: "development-only; no email sent",
     };
-  fail(503, "Email delivery is not configured. Contact support.");
+  const delivery = deliverEmail(env, user.email, kind, link, digest(raw)).catch(
+    async () => {
+      await env.DB.prepare(`DELETE FROM ${table} WHERE token_hash=?`)
+        .bind(digest(raw))
+        .run();
+      await audit(env, user.id, "email.delivery.failed", user.id);
+    },
+  );
+  if (ctx) ctx.waitUntil(delivery);
+  else await delivery;
+  return {};
 }
 async function webhook(req: Request, env: Env) {
   if (env.PAYMENTS_ENABLED !== "true" || !env.KOFI_VERIFICATION_TOKEN)
     fail(503, "Live payments are disabled");
-  const text = await req.text();
-  if (text.length > 32768) fail(413, "Request too large");
+  if (
+    req.headers.get("content-type")?.split(";")[0].trim() !==
+    "application/x-www-form-urlencoded"
+  )
+    fail(415, "Expected a form-encoded webhook");
+  const text = await readBody(req, 32768);
   const data = JSON.parse(new URLSearchParams(text).get("data") || "{}");
   const event = z
     .object({
@@ -156,7 +174,7 @@ async function webhook(req: Request, env: Env) {
     .run();
   return json({ received: true, duplicate: result.meta.changes === 0 });
 }
-async function handle(req: Request, env: Env) {
+async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
   const url = new URL(req.url),
     path = url.pathname.replace(/^\/api/, "");
   if (
@@ -164,9 +182,14 @@ async function handle(req: Request, env: Env) {
     !["development", "production", "test"].includes(env.ENVIRONMENT)
   )
     fail(503, "Invalid server configuration");
+  const appOrigin = z.url().safeParse(env.APP_ORIGIN);
+  if (!appOrigin.success || new URL(env.APP_ORIGIN).origin !== env.APP_ORIGIN)
+    fail(503, "APP_ORIGIN must be an exact origin");
   if (
     env.ENVIRONMENT === "production" &&
-    (!env.RATE_LIMIT_SECRET || env.APP_ORIGIN.startsWith("http:"))
+    (!env.RATE_LIMIT_SECRET ||
+      env.RATE_LIMIT_SECRET.length < 32 ||
+      !/^https:\/\/[^/]+$/.test(env.APP_ORIGIN))
   )
     fail(503, "Production security configuration is incomplete");
   if (path === "/webhooks/kofi" && req.method === "POST")
@@ -174,7 +197,8 @@ async function handle(req: Request, env: Env) {
   if (!["GET", "HEAD"].includes(req.method)) {
     if (
       req.headers.get("origin") !== env.APP_ORIGIN ||
-      !req.headers.get("content-type")?.startsWith("application/json")
+      req.headers.get("content-type")?.split(";")[0].trim() !==
+        "application/json"
     )
       fail(403, "Request origin rejected");
   }
@@ -216,33 +240,43 @@ async function handle(req: Request, env: Env) {
       ).results,
     });
   if (path === "/auth/register" && req.method === "POST") {
-    if (env.ENVIRONMENT === "production")
-      fail(503, "Registration is disabled until email delivery is configured");
+    if (emailMode(env) === "disabled")
+      fail(503, "Email delivery is not configured. Contact support.");
     const b = credentials
       .extend({ name: z.string().trim().min(1).max(80) })
       .parse(await parse(req));
     await rate(env, "register:" + digest(b.email), 3);
     const id = crypto.randomUUID();
     const hash = await hashPassword(b.password);
-    const exists = await env.DB.prepare("SELECT id FROM users WHERE email=?")
+    const exists = await env.DB.prepare("SELECT * FROM users WHERE email=?")
       .bind(b.email)
-      .first();
+      .first<User>();
+    const registrationMessage =
+      "If eligible, verification instructions will be delivered. Check your inbox or request a new link.";
     if (exists)
-      return json({
-        message: "If eligible, verification instructions are available.",
-      });
+      return json(
+        {
+          message: registrationMessage,
+          ...(!exists.verified && !exists.disabled
+            ? await issue(env, exists, "verify", ctx)
+            : {}),
+        },
+        201,
+      );
     await env.DB.prepare(
-      "INSERT INTO users(id,email,name,password_hash,created_at) VALUES(?,?,?,?,?)",
+      "INSERT OR IGNORE INTO users(id,email,name,password_hash,created_at) VALUES(?,?,?,?,?)",
     )
       .bind(id, b.email, b.name, hash, now())
       .run();
-    const u = await env.DB.prepare("SELECT * FROM users WHERE id=?")
-      .bind(id)
+    const u = await env.DB.prepare("SELECT * FROM users WHERE email=?")
+      .bind(b.email)
       .first<User>();
     return json(
       {
-        message: "Account created. Verify your email before logging in.",
-        ...(await issue(env, u!, "verify")),
+        message: registrationMessage,
+        ...(!u!.verified && !u!.disabled
+          ? await issue(env, u!, "verify", ctx)
+          : {}),
       },
       201,
     );
@@ -267,18 +301,36 @@ async function handle(req: Request, env: Env) {
       .run();
     return json({ user: safeUser(u) }, 200, { "Set-Cookie": cookie(raw, env) });
   }
-  if (path === "/auth/forgot-password" && req.method === "POST") {
+  if (
+    (path === "/auth/forgot-password" ||
+      path === "/auth/resend-verification") &&
+    req.method === "POST"
+  ) {
+    if (emailMode(env) === "disabled")
+      fail(503, "Email delivery is not configured. Contact support.");
     const { email } = z
-      .object({ email: z.email().transform((v) => v.toLowerCase()) })
+      .object({
+        email: z
+          .email()
+          .max(254)
+          .transform((v) => v.toLowerCase()),
+      })
       .parse(await parse(req));
+    await rate(env, "email:" + digest(email), 3);
     const u = await env.DB.prepare("SELECT * FROM users WHERE email=?")
       .bind(email)
       .first<User>();
-    if (env.ENVIRONMENT === "production")
-      fail(503, "Email delivery is not configured. Contact support.");
     return json({
-      message: "If the account exists, reset instructions are available.",
-      ...(u ? await issue(env, u, "reset") : {}),
+      message:
+        "If eligible, instructions will be delivered. Check your inbox and spam folder.",
+      ...(u && !u.disabled && (path.endsWith("forgot-password") || !u.verified)
+        ? await issue(
+            env,
+            u,
+            path.endsWith("forgot-password") ? "reset" : "verify",
+            ctx,
+          )
+        : {}),
     });
   }
   if (
@@ -289,30 +341,33 @@ async function handle(req: Request, env: Env) {
     const b = z
       .object({
         token: z.string().regex(/^[a-f0-9]{64}$/),
-        password: reset ? z.string().min(12).max(128) : z.string().optional(),
+        password: z.string().min(12).max(128),
       })
       .parse(await parse(req));
     const table = reset ? "password_reset_tokens" : "email_verification_tokens";
-    const hash = reset ? await hashPassword(b.password!) : null;
-    const result = await env.DB.prepare(
-      `DELETE FROM ${table} WHERE token_hash=? AND expires_at>? RETURNING user_id`,
-    )
-      .bind(digest(b.token), now())
-      .first<{ user_id: string }>();
-    if (!result) fail(400, "Link is invalid or expired");
-    await env.DB.batch([
+    // The mailbox owner chooses the final password. A pre-verification
+    // registrant must never retain credentials after someone else activates.
+    const hash = await hashPassword(b.password);
+    const rawHash = digest(b.token),
+      time = now();
+    const validUser = `SELECT user_id FROM ${table} WHERE token_hash=? AND expires_at>?`;
+    const results = await env.DB.batch([
       reset
-        ? env.DB.prepare("UPDATE users SET password_hash=? WHERE id=?").bind(
-            hash,
-            result!.user_id,
-          )
-        : env.DB.prepare("UPDATE users SET verified=1 WHERE id=?").bind(
-            result!.user_id,
-          ),
-      env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(
-        result!.user_id,
+        ? env.DB.prepare(
+            `UPDATE users SET password_hash=? WHERE id=(${validUser})`,
+          ).bind(hash, rawHash, time)
+        : env.DB.prepare(
+            `UPDATE users SET verified=1,password_hash=? WHERE id=(${validUser})`,
+          ).bind(hash, rawHash, time),
+      env.DB.prepare(`DELETE FROM sessions WHERE user_id=(${validUser})`).bind(
+        rawHash,
+        time,
       ),
+      env.DB.prepare(
+        `DELETE FROM ${table} WHERE token_hash=? AND expires_at>? RETURNING user_id`,
+      ).bind(rawHash, time),
     ]);
+    if (!results[2].results.length) fail(400, "Link is invalid or expired");
     return json({
       message: reset
         ? "Password changed. Sign in with your new password."
@@ -381,6 +436,8 @@ async function handle(req: Request, env: Env) {
       "saved_presets",
       "tool_history",
       "subscriptions",
+      "membership_claims",
+      "payment_events",
     ];
     const data: Record<string, unknown> = { profile: safeUser(u) };
     for (const t of tables)
@@ -480,13 +537,9 @@ async function handle(req: Request, env: Env) {
             data: z.record(z.string(), z.unknown()),
           })
           .parse(await parse(req));
-        const count = await env.DB.prepare(
-          "SELECT count(*) n FROM saved_presets WHERE user_id=?",
+        const saved = await env.DB.prepare(
+          "INSERT INTO saved_presets SELECT ?,?,?,?,?,? WHERE (SELECT count(*) FROM saved_presets WHERE user_id=?)<100",
         )
-          .bind(u.id)
-          .first<{ n: number }>();
-        if (count!.n >= 100) fail(400, "Limit of 100 saved records reached");
-        await env.DB.prepare("INSERT INTO saved_presets VALUES(?,?,?,?,?,?)")
           .bind(
             crypto.randomUUID(),
             u.id,
@@ -494,8 +547,11 @@ async function handle(req: Request, env: Env) {
             b.name,
             JSON.stringify(b.data),
             now(),
+            u.id,
           )
           .run();
+        if (!saved.meta.changes)
+          fail(400, "Limit of 100 saved records reached");
         return json({ message: "Saved" });
       }
       if (req.method === "DELETE") {
@@ -633,7 +689,7 @@ async function handle(req: Request, env: Env) {
             .number()
             .int()
             .min(now() + 1)
-            .max(now() + 366 * 86400),
+            .max(now() + (pricing.yearlyEnabled ? 366 : 32) * 86400),
           ownershipVerified: z.literal(true),
         })
         .parse(await parse(req));
@@ -643,39 +699,51 @@ async function handle(req: Request, env: Env) {
         .bind(b.claimId, "pending")
         .first<{ id: string; user_id: string; transaction_id: string }>();
       const event = await env.DB.prepare(
-        "SELECT * FROM payment_events WHERE id=? AND status=? AND member=1",
+        "SELECT * FROM payment_events WHERE id=? AND status=? AND member=1 AND currency=? AND CAST(amount AS REAL)>=?",
       )
-        .bind(b.eventId, "pending")
+        .bind(b.eventId, "pending", pricing.currency, pricing.monthly)
         .first<{ transaction_id: string }>();
       if (!claim || !event || claim.transaction_id !== event.transaction_id)
         fail(
           400,
           "Claim must match an authenticated, pending membership payment",
         );
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO subscriptions VALUES(?,?,?,?,?,?)").bind(
-          crypto.randomUUID(),
+      const subscriptionId = crypto.randomUUID();
+      const reconciled = await env.DB.batch([
+        env.DB.prepare(
+          "INSERT INTO subscriptions SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM membership_claims c JOIN payment_events e ON c.transaction_id=e.transaction_id WHERE c.id=? AND c.status='pending' AND e.id=? AND e.status='pending' AND e.member=1 AND e.currency=? AND CAST(e.amount AS REAL)>=?) AND NOT EXISTS(SELECT 1 FROM subscriptions WHERE event_id=?)",
+        ).bind(
+          subscriptionId,
           claim!.user_id,
           b.eventId,
           b.paidThrough,
           "kofi-reviewed",
           now(),
+          b.claimId,
+          b.eventId,
+          pricing.currency,
+          pricing.monthly,
+          b.eventId,
         ),
         env.DB.prepare(
-          "UPDATE payment_events SET status=?,user_id=? WHERE id=?",
-        ).bind("linked", claim!.user_id, b.eventId),
-        env.DB.prepare("UPDATE membership_claims SET status=? WHERE id=?").bind(
-          "approved",
-          b.claimId,
-        ),
-        env.DB.prepare("INSERT INTO audit_logs VALUES(?,?,?,?,?)").bind(
+          "UPDATE payment_events SET status=?,user_id=? WHERE id=? AND EXISTS(SELECT 1 FROM subscriptions WHERE id=?)",
+        ).bind("linked", claim!.user_id, b.eventId, subscriptionId),
+        env.DB.prepare(
+          "UPDATE membership_claims SET status=? WHERE id=? AND EXISTS(SELECT 1 FROM subscriptions WHERE id=?)",
+        ).bind("approved", b.claimId, subscriptionId),
+        env.DB.prepare(
+          "INSERT INTO audit_logs SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM subscriptions WHERE id=?)",
+        ).bind(
           crypto.randomUUID(),
           u.id,
           "membership.reconcile",
           b.claimId,
           now(),
+          subscriptionId,
         ),
       ]);
+      if (!reconciled[0].meta.changes)
+        fail(409, "Payment was already reconciled. Refresh before retrying.");
       return json({ message: "Membership reconciled" });
     }
     if (path === "/admin/subscriptions/revoke" && req.method === "POST") {
@@ -775,22 +843,24 @@ export default {
       ]),
     );
   },
-  async fetch(req: Request, env: Env) {
+  async fetch(req: Request, env: Env, ctx?: ExecutionContext) {
     let response: Response;
     try {
-      response = (await handle(req, env)) as Response;
+      response = (await handle(req, env, ctx)) as Response;
     } catch (e) {
       response =
-        e instanceof HttpError
-          ? json({ error: e.message }, e.status)
-          : e instanceof z.ZodError || e instanceof SyntaxError
-            ? json({ error: "Invalid input" }, 400)
-            : json({ error: "An unexpected error occurred" }, 500);
+        e instanceof BodyTooLarge
+          ? json({ error: "Request too large" }, 413)
+          : e instanceof HttpError
+            ? json({ error: e.message }, e.status)
+            : e instanceof z.ZodError || e instanceof SyntaxError
+              ? json({ error: "Invalid input" }, 400)
+              : json({ error: "An unexpected error occurred" }, 500);
     }
     const h = new Headers(response.headers);
     h.set("Cache-Control", "no-store");
     h.set("X-Content-Type-Options", "nosniff");
-    h.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    h.set("Referrer-Policy", "no-referrer");
     h.set("X-Frame-Options", "DENY");
     h.set(
       "Content-Security-Policy",

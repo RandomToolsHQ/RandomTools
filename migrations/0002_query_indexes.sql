@@ -1,0 +1,9 @@
+CREATE INDEX sessions_expiry ON sessions(expires_at);
+CREATE INDEX verification_user ON email_verification_tokens(user_id);
+CREATE INDEX verification_expiry ON email_verification_tokens(expires_at);
+CREATE INDEX reset_user ON password_reset_tokens(user_id);
+CREATE INDEX reset_expiry ON password_reset_tokens(expires_at);
+CREATE INDEX payment_user_date ON payment_events(user_id,received_at);
+CREATE INDEX claims_user_date ON membership_claims(user_id,created_at);
+CREATE INDEX audit_date ON audit_logs(created_at);
+CREATE INDEX rate_expiry ON rate_limits(expires_at);

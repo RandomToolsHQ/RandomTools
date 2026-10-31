@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
@@ -12,9 +12,14 @@ export default function Account({ page }: { page: string }) {
   const [message, setMessage] = useState("");
   const [devLink, setDevLink] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setMessage("");
+    setDevLink("");
+  }, [page]);
   async function action(fn: () => Promise<any>) {
     setBusy(true);
     setMessage("");
+    setDevLink("");
     try {
       const data = await fn();
       setMessage(data?.message || "Done");
@@ -31,6 +36,7 @@ export default function Account({ page }: { page: string }) {
     "login",
     "register",
     "forgot-password",
+    "resend-verification",
     "reset-password",
     "verify-email",
   ].includes(page);
@@ -44,6 +50,7 @@ export default function Account({ page }: { page: string }) {
               login: "Welcome back.",
               register: "Make yourself at home.",
               "forgot-password": "Forgot your password?",
+              "resend-verification": "A new verification link.",
               "reset-password": "A fresh start.",
               "verify-email": "Verify your email.",
             }[page]
@@ -53,7 +60,7 @@ export default function Account({ page }: { page: string }) {
           {page === "register"
             ? "Save your workspace. Keep the essentials free."
             : page === "verify-email"
-              ? "Confirm this verification link to activate your account."
+              ? "Choose your final account password to activate this verified email address. You can use the password you chose during registration."
               : "Your tools are right where you left them."}
         </p>
         <form
@@ -76,7 +83,12 @@ export default function Account({ page }: { page: string }) {
               <input name="name" autoComplete="name" required maxLength={80} />
             </label>
           )}
-          {["login", "register", "forgot-password"].includes(page) && (
+          {[
+            "login",
+            "register",
+            "forgot-password",
+            "resend-verification",
+          ].includes(page) && (
             <label>
               Email address
               <input
@@ -88,7 +100,9 @@ export default function Account({ page }: { page: string }) {
               />
             </label>
           )}
-          {["login", "register", "reset-password"].includes(page) && (
+          {["login", "register", "reset-password", "verify-email"].includes(
+            page,
+          ) && (
             <>
               <label htmlFor="account-password">
                 Password
@@ -133,6 +147,7 @@ export default function Account({ page }: { page: string }) {
           <Link to="/login">Log in</Link>
           <Link to="/register">Create account</Link>
           <Link to="/forgot-password">Reset password</Link>
+          <Link to="/resend-verification">Resend verification</Link>
         </div>
       </section>
     );

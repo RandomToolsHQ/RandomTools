@@ -5,6 +5,11 @@ dist/
 .env.*
 !.env.example
 .dev.vars
+.dev.vars.*
+*.pem
+*.key
+*.p12
+backups/
 playwright-report/
 test-results/
 *.log

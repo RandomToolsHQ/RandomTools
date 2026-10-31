@@ -1,7 +1,7 @@
-import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { beforeAll, afterAll, describe, it, expect, vi } from "vitest";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { build } from "esbuild";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import worker from "../worker/index";
 import { digest } from "../worker/security";
 let mf: Miniflare;
@@ -37,12 +37,12 @@ async function account(label: string) {
   expect(data.delivery).toContain("no email sent");
   const raw = new URL(data.developmentLink).searchParams.get("token");
   expect((await request("/auth/login", { email, password })).status).toBe(401);
-  expect((await request("/auth/verify-email", { token: raw })).status).toBe(
-    200,
-  );
-  expect((await request("/auth/verify-email", { token: raw })).status).toBe(
-    400,
-  );
+  expect(
+    (await request("/auth/verify-email", { token: raw, password })).status,
+  ).toBe(200);
+  expect(
+    (await request("/auth/verify-email", { token: raw, password })).status,
+  ).toBe(400);
   const login = await request("/auth/login", { email, password });
   expect(login.status).toBe(200);
   const cookie = login.headers.get("set-cookie")!.split(";")[0];
@@ -74,12 +74,143 @@ beforeAll(async () => {
     }),
   );
   db = await mf.getD1Database("DB");
-  await db.exec(await readFile("migrations/0001_initial.sql", "utf8"));
+  for (const migration of (await readdir("migrations"))
+    .filter((name) => name.endsWith(".sql"))
+    .sort()) {
+    await db.exec(await readFile("migrations/" + migration, "utf8"));
+  }
 }, 60000);
 afterAll(async () => {
   await mf?.dispose();
 });
 describe("Worker + real local D1", () => {
+  it("lets the verified mailbox owner replace pre-activation credentials", async () => {
+    const email = "activation-owner@example.test";
+    const signup = await request("/auth/register", {
+      email,
+      name: "Unverified registration",
+      password: "pre-registration password",
+    });
+    const data = (await signup.json()) as any;
+    const token = new URL(data.developmentLink).searchParams.get("token");
+    expect(
+      (
+        await request("/auth/verify-email", {
+          token,
+          password: "mailbox owner chosen password",
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await request("/auth/login", {
+          email,
+          password: "pre-registration password",
+        })
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await request("/auth/login", {
+          email,
+          password: "mailbox owner chosen password",
+        })
+      ).status,
+    ).toBe(200);
+  }, 60000);
+  it("delivers production email only through a mocked provider, hides account existence and records failures", async () => {
+    const provider = vi
+      .fn()
+      .mockResolvedValue(Response.json({ id: "mock-provider-message" }));
+    vi.stubGlobal("fetch", provider);
+    const env = {
+      DB: db,
+      APP_ORIGIN: "https://app.example.test",
+      ENVIRONMENT: "production",
+      PAYMENTS_ENABLED: "false",
+      RATE_LIMIT_SECRET: "test-only-rate-secret-".repeat(3),
+      EMAIL_PROVIDER: "resend",
+      EMAIL_FROM: "sender@example.test",
+      RESEND_API_KEY: "test-only-not-a-real-key",
+    };
+    const pending: Promise<unknown>[] = [];
+    const ctx = {
+      waitUntil: (promise: Promise<unknown>) => pending.push(promise),
+    } as any;
+    const call = (path: string, body: unknown) =>
+      worker.fetch(
+        new Request("https://app.example.test/api" + path, {
+          method: "POST",
+          headers: {
+            origin: env.APP_ORIGIN,
+            "content-type": "application/json",
+            "CF-Connecting-IP": "203.0.113.17",
+          },
+          body: JSON.stringify(body),
+        }),
+        env,
+        ctx,
+      );
+    try {
+      const body = {
+        email: "production-fixture@example.test",
+        name: "Production fixture",
+        password: "a production testing password",
+      };
+      const created = await call("/auth/register", body);
+      const createdBody = await created.json();
+      expect(created.status).toBe(201);
+      expect(createdBody).not.toHaveProperty("developmentLink");
+      await Promise.all(pending.splice(0));
+      expect(provider).toHaveBeenCalledTimes(1);
+      const sent = JSON.parse(provider.mock.calls[0][1].body);
+      expect(sent.text).toContain(
+        "https://app.example.test/verify-email?token=",
+      );
+      await db
+        .prepare("UPDATE users SET verified=1 WHERE email=?")
+        .bind(body.email)
+        .run();
+      const existing = await call("/auth/register", body);
+      expect(existing.status).toBe(201);
+      expect(await existing.json()).toEqual(createdBody);
+      const known = await call("/auth/forgot-password", { email: body.email });
+      const unknown = await call("/auth/forgot-password", {
+        email: "absent@example.test",
+      });
+      expect(known.status).toBe(unknown.status);
+      expect(await known.json()).toEqual(await unknown.json());
+      await Promise.all(pending.splice(0));
+      provider.mockRejectedValue(Error("sensitive provider failure"));
+      const failure = await call("/auth/forgot-password", {
+        email: body.email,
+      });
+      expect(failure.status).toBe(200);
+      await Promise.all(pending.splice(0));
+      const user = await db
+        .prepare("SELECT id FROM users WHERE email=?")
+        .bind(body.email)
+        .first<{ id: string }>();
+      expect(
+        await db
+          .prepare(
+            "SELECT token_hash FROM password_reset_tokens WHERE user_id=?",
+          )
+          .bind(user!.id)
+          .first(),
+      ).toBeNull();
+      expect(
+        await db
+          .prepare(
+            "SELECT action FROM audit_logs WHERE actor_id=? AND action=?",
+          )
+          .bind(user!.id, "email.delivery.failed")
+          .first(),
+      ).toBeTruthy();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  }, 60000);
   it("purges expired sessions, tokens and history on schedule", async () => {
     // Create this fixture directly; no public bootstrap endpoint exists.
     await db
@@ -309,6 +440,132 @@ describe("Worker + real local D1", () => {
     expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
       403,
     );
+    const renewal = {
+      ...event,
+      message_id: "event-renewal",
+      kofi_transaction_id: "transaction-renewal",
+    };
+    expect((await send(renewal)).status).toBe(200);
+    expect(
+      (
+        await request(
+          "/subscription/claim",
+          { transactionId: renewal.kofi_transaction_id },
+          a.cookie,
+        )
+      ).status,
+    ).toBe(200);
+    const renewedClaim = await db
+      .prepare(
+        "SELECT id FROM membership_claims WHERE user_id=? AND transaction_id=?",
+      )
+      .bind(a.id, renewal.kofi_transaction_id)
+      .first<{ id: string }>();
+    const renewedBody = {
+      ...body,
+      claimId: renewedClaim!.id,
+      eventId: renewal.message_id,
+    };
+    expect(
+      (
+        await request(
+          "/admin/reconcile",
+          {
+            ...renewedBody,
+            paidThrough: Math.floor(Date.now() / 1000) + 60 * 86400,
+          },
+          admin.cookie,
+        )
+      ).status,
+    ).toBe(400);
+    const concurrent = await Promise.all([
+      request("/admin/reconcile", renewedBody, admin.cookie),
+      request("/admin/reconcile", renewedBody, admin.cookie),
+    ]);
+    expect(concurrent.filter((r) => r.status === 200)).toHaveLength(1);
+    expect(concurrent.every((r) => [200, 400, 409].includes(r.status))).toBe(
+      true,
+    );
+    expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
+      200,
+    );
+    const renewedSubscription = await db
+      .prepare("SELECT id FROM subscriptions WHERE event_id=?")
+      .bind(renewal.message_id)
+      .first<{ id: string }>();
+    expect(
+      (
+        await request(
+          "/admin/subscriptions/revoke",
+          { id: renewedSubscription!.id, reason: "refund" },
+          admin.cookie,
+        )
+      ).status,
+    ).toBe(200);
+    expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
+      403,
+    );
+    for (const [suffix, currency, amount] of [
+      ["currency", "USD", "4.99"],
+      ["amount", "AUD", "0.01"],
+    ]) {
+      const unsupported = {
+        ...event,
+        message_id: "unsupported-" + suffix,
+        kofi_transaction_id: "unsupported-" + suffix,
+        currency,
+        amount,
+      };
+      expect((await send(unsupported)).status).toBe(200);
+      expect(
+        (
+          await request(
+            "/subscription/claim",
+            { transactionId: unsupported.kofi_transaction_id },
+            a.cookie,
+          )
+        ).status,
+      ).toBe(200);
+      const pendingClaim = await db
+        .prepare(
+          "SELECT id FROM membership_claims WHERE user_id=? AND transaction_id=?",
+        )
+        .bind(a.id, unsupported.kofi_transaction_id)
+        .first<{ id: string }>();
+      expect(
+        (
+          await request(
+            "/admin/reconcile",
+            {
+              ...body,
+              claimId: pendingClaim!.id,
+              eventId: unsupported.message_id,
+            },
+            admin.cookie,
+          )
+        ).status,
+      ).toBe(400);
+    }
+    await db.batch(
+      Array.from({ length: 99 }, (_, i) =>
+        db
+          .prepare("INSERT INTO saved_presets VALUES(?,?,?,?,?,?)")
+          .bind("quota-" + i, admin.id, "preset", "Quota fixture", "{}", 1),
+      ),
+    );
+    const quota = await Promise.all([
+      request(
+        "/pro/presets",
+        { kind: "preset", name: "Concurrent one", data: {} },
+        admin.cookie,
+      ),
+      request(
+        "/pro/presets",
+        { kind: "preset", name: "Concurrent two", data: {} },
+        admin.cookie,
+      ),
+    ]);
+    expect(quota.map((r) => r.status).sort()).toEqual([200, 400]);
     expect((await request("/auth/logout", {}, a.cookie)).status).toBe(200);
     expect((await request("/subscription", undefined, a.cookie)).status).toBe(
       401,
