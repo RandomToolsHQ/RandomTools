@@ -70,7 +70,20 @@ function App() {
       .querySelector('meta[property="og:description"]')
       ?.setAttribute("content", description);
     const origin = import.meta.env.VITE_SITE_URL;
-    if (origin) {
+    const publicPage =
+      ["/", "/tools", "/pro", "/privacy", "/terms", "/contact"].includes(
+        pathname,
+      ) || tools.some((t) => pathname === "/tools/" + t.id);
+    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!publicPage) {
+      if (!robots) {
+        robots = document.createElement("meta");
+        robots.name = "robots";
+        document.head.appendChild(robots);
+      }
+      robots.content = "noindex,nofollow";
+    } else robots?.remove();
+    if (origin && publicPage) {
       let canonical = document.querySelector<HTMLLinkElement>(
         'link[rel="canonical"]',
       );
@@ -80,6 +93,39 @@ function App() {
         document.head.appendChild(canonical);
       }
       canonical.href = new URL(pathname, origin).href;
+      let ogUrl = document.querySelector<HTMLMetaElement>(
+        'meta[property="og:url"]',
+      );
+      if (!ogUrl) {
+        ogUrl = document.createElement("meta");
+        ogUrl.setAttribute("property", "og:url");
+        document.head.appendChild(ogUrl);
+      }
+      ogUrl.content = canonical.href;
+      let structured = document.querySelector<HTMLScriptElement>(
+        'script[type="application/ld+json"]',
+      );
+      if (!structured) {
+        structured = document.createElement("script");
+        structured.type = "application/ld+json";
+        document.head.appendChild(structured);
+      }
+      structured.textContent = JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: label,
+        url: canonical.href,
+        description,
+        applicationCategory: "UtilitiesApplication",
+        operatingSystem: "Web browser",
+        ...(tools.some((t) => pathname === "/tools/" + t.id)
+          ? { offers: { "@type": "Offer", price: "0", priceCurrency: "AUD" } }
+          : {}),
+      });
+    } else {
+      document.querySelector('link[rel="canonical"]')?.remove();
+      document.querySelector('meta[property="og:url"]')?.remove();
+      document.querySelector('script[type="application/ld+json"]')?.remove();
     }
     window.scrollTo(0, 0);
   }, [loc.pathname]);

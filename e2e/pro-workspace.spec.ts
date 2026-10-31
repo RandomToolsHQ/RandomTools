@@ -1,7 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+import { unzipSync } from "fflate";
 test("Pro browser engines run with an entitled account API fixture", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.route("**/api/me", (route) =>
     route.fulfill({
       json: {
@@ -75,4 +77,24 @@ test("Pro browser engines run with an entitled account API fixture", async ({
   await expect
     .poll(() => page.getByLabel("Result", { exact: true }).inputValue())
     .toContain("2cf24dba5fb0a30e");
+  await page
+    .getByRole("combobox", { name: "Batch operation" })
+    .selectOption("image");
+  const png = await page.screenshot({
+    clip: { x: 0, y: 0, width: 40, height: 40 },
+  });
+  const downloading = page.waitForEvent("download");
+  await page.locator("input[type=file]").setInputFiles([
+    { name: "first.png", mimeType: "image/png", buffer: png },
+    { name: "second.png", mimeType: "image/png", buffer: png },
+  ]);
+  const zip = await downloading;
+  expect(zip.suggestedFilename()).toBe("randomtools-images.zip");
+  const path = testInfo.outputPath("images.zip");
+  await zip.saveAs(path);
+  const images = unzipSync(await readFile(path));
+  expect(Object.keys(images)).toHaveLength(2);
+  expect(
+    Object.keys(images).every((name) => /\.(webp|png|jpg)$/.test(name)),
+  ).toBe(true);
 });

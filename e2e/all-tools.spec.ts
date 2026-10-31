@@ -55,5 +55,18 @@ test("QR, hashing and image compression process local inputs", async ({
     .setInputFiles({ name: "sample.png", mimeType: "image/png", buffer: png });
   await expect
     .poll(() => page.locator("#output").inputValue())
-    .toContain("WebP:");
+    .toContain("Compressed (");
+  const jpeg = await page.screenshot({
+    type: "jpeg",
+    quality: 90,
+    clip: { x: 0, y: 0, width: 40, height: 40 },
+  });
+  await page.locator("input[type=file]").setInputFiles({
+    name: "sample.jpg",
+    mimeType: "image/jpeg",
+    buffer: jpeg,
+  });
+  await expect
+    .poll(() => page.locator("#output").inputValue())
+    .toMatch(/Compressed \((?:WEBP|JPG)\)/);
 });

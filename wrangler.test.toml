@@ -1,0 +1,14 @@
+# Local test harness only. Never deploy this configuration.
+name = "randomtools-test-api"
+main = "worker/index.ts"
+compatibility_date = "2026-10-01"
+[vars]
+APP_ORIGIN = "http://localhost:5180"
+ENVIRONMENT = "development"
+EMAIL_PROVIDER = "development"
+PAYMENTS_ENABLED = "false"
+[[d1_databases]]
+binding = "DB"
+database_name = "randomtools-test"
+database_id = "00000000-0000-0000-0000-000000000001"
+migrations_dir = "migrations"

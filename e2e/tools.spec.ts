@@ -2,7 +2,18 @@ import { test, expect } from "@playwright/test";
 test("directory search and JSON tool work without an account", async ({
   page,
 }) => {
-  await page.goto("/tools");
+  await page.goto("/login");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "noindex,nofollow",
+  );
+  if ((page.viewportSize()?.width || 1280) < 760)
+    await page.getByRole("button", { name: "Toggle navigation" }).click();
+  await page
+    .getByRole("navigation")
+    .getByRole("link", { name: "Explore tools" })
+    .click();
+  await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   await page.getByRole("textbox", { name: "Search tools" }).fill("JSON");
   await expect(
     page.getByRole("heading", { name: "JSON formatter" }),

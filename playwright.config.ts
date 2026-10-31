@@ -1,25 +1,35 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
-  use: { baseURL: "http://localhost:5173" },
+  use: { baseURL: "http://localhost:5180" },
+  workers: 2,
   webServer: [
     {
-      command: process.platform === "win32" ? "npm.cmd run dev" : "npm run dev",
-      url: "http://localhost:5173",
-      reuseExistingServer: !process.env.CI,
+      command: "node scripts/e2e-server.mjs frontend",
+      url: "http://localhost:5180",
+      reuseExistingServer: false,
     },
     {
-      command:
-        process.platform === "win32"
-          ? "npm.cmd run db:migrate && npm.cmd run dev:api"
-          : "npm run db:migrate && npm run dev:api",
-      url: "http://localhost:8787/api/me",
-      reuseExistingServer: !process.env.CI,
+      command: "node scripts/e2e-server.mjs api",
+      url: "http://localhost:8788/api/me",
+      reuseExistingServer: false,
       timeout: 60000,
     },
   ],
   projects: [
     { name: "desktop", use: { viewport: { width: 1280, height: 900 } } },
     { name: "mobile", use: { viewport: { width: 390, height: 844 } } },
+    {
+      name: "firefox",
+      use: { browserName: "firefox", viewport: { width: 1280, height: 900 } },
+    },
+    {
+      name: "webkit",
+      use: {
+        browserName: "webkit",
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+      },
+    },
   ],
 });
