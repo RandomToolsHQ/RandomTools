@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Exact public Clerk staging publishable key; never allow backend secret keys"
+regexTarget = "secret"
+regexes = ['''^pk_test_cXVpZXQtY2l2ZXQtODc4Mi5jbGVyay5hY2NvdW50cy5kZXYk$''']

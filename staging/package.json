@@ -1,0 +1,5 @@
+{
+  "name": "randomtools-staging-deployment",
+  "private": true,
+  "type": "module"
+}

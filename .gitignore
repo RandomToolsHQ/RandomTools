@@ -1,5 +1,6 @@
 node_modules/
 dist/
+staging/dist/
 .wrangler/
 .env
 .env.*

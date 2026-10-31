@@ -13,11 +13,14 @@
     "test:e2e": "playwright test",
     "db:migrate": "wrangler d1 migrations apply randomtools --config wrangler.api.toml --local",
     "format": "prettier --write src worker tests e2e functions scripts *.ts *.json *.js",
-    "build:pages": "npm run build && wrangler pages functions build --outdir dist/_worker.js",
+    "build:pages": "npm run build && node scripts/hosting.mjs && wrangler pages functions build --outdir dist/_worker.js",
+    "build:staging": "node scripts/staging.mjs",
     "preview:pages": "wrangler pages dev dist --port 8790",
     "check:backup": "node scripts/check-backup.mjs"
   },
   "dependencies": {
+    "@clerk/backend": "^3.26.5",
+    "@clerk/react": "^6.18.4",
     "@noble/hashes": "latest",
     "@tanstack/react-query": "latest",
     "diff": "latest",
