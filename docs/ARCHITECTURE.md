@@ -1,5 +1,11 @@
 # Architecture
 
+Hosted accounts now use Clerk's frontend SDK and server-verified short-lived
+session tokens; D1 retains internal users, roles and entitlements. See
+[CLERK.md](CLERK.md) for the additive identity migration and deployment gates.
+Legacy password/session tables remain for local regression testing and explicit
+operator-reviewed migration, not a hosted fallback.
+
 React + Vite + Tailwind provide the UI; Router lazy-loads tool/account screens, Motion respects reduced motion, Lucide supplies icons, TanStack Query handles account reads and cache invalidation. Pure engines are shared by free and batch tools. Regex runs in an isolated worker terminated after one second. Image compression uses OffscreenCanvas in a shared file worker where supported and a validated canvas fallback in WebKit; hashing runs in the file worker. WebP is preferred; browsers without that encoder use JPEG for JPEG inputs and PNG otherwise, preserving transparency. Downloads use the actual format. Batch images download as a single ZIP to avoid browser multiple-download restrictions. File workers time out after 30 seconds. Browser files are limited to 25 MB, images to 24 MP. Batch files are sequential, max 20 / 100 MB input and 100 MB output. Web Crypto and browser Workers are required.
 
 Pages serves `dist`; `functions/api/[[path]].ts` forwards same-origin requests using service binding API. `build:pages` compiles it into advanced-mode `dist/_worker.js`. A standalone Worker owns D1. The root `wrangler.toml` defines Pages output and the service binding; **`wrangler.api.toml` separately configures the API Worker**. Every API Wrangler command supplies `--config wrangler.api.toml`. Vite proxies API traffic locally instead of running Pages Functions.

@@ -1,5 +1,12 @@
 # Security
 
+Hosted authentication has migrated to Clerk; see [CLERK.md](docs/CLERK.md) for
+the current token/session boundary, identity ownership, revocation and deletion
+requirements. The custom password/cookie description below applies to the local
+legacy regression adapter. Hosted modes reject that adapter, and production
+rejects Clerk development keys. Hosted Clerk acceptance and CPU testing remain
+required before a release.
+
 Report vulnerabilities privately to randomtoolshq@gmail.com. Do not include live credentials or personal data in public issues. Provide a minimal reproduction and affected commit.
 
 Passwords use `@noble/hashes` PBKDF2-HMAC-SHA256, 600,000 iterations and random 256-bit salts. The library's native Web Crypto adapter runs first; runtimes that reject its work factor with NotSupportedError fall back to the audited JavaScript implementation with the **same** parameters. Tests verify byte-for-byte equivalence. The cost is never reduced to accommodate a runtime limit. Session and one-time tokens are random 256-bit values; only SHA-256 token digests are stored. Cookies are HTTP-only, SameSite=Strict and Secure in production. Password changes revoke all sessions. Email verification/reset tokens expire and are consumed once.

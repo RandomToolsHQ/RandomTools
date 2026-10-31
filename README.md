@@ -1,5 +1,15 @@
 # RandomTools HQ
 
+**Public tools staging:** [randomtools-preview.pages.dev](https://randomtools-preview.pages.dev).
+All 18 free tools are available; accounts, admin and Pro workspaces are restricted
+to controlled testing. No purchased domain or live payments are required. See
+[the current staging guide](docs/STAGING.md) for the exact deployment boundary.
+
+Hosted authentication is being migrated to Clerk Hobby. Read
+[CLERK.md](docs/CLERK.md) and [PROGRESS.md](PROGRESS.md) before deployment;
+the local password adapter described below is retained for regression tests.
+The staging schema is provisioned; hosted account sign-in remains gated.
+
 A React / TypeScript toolkit with 18 browser utilities, a D1-backed account API and an explicitly reviewed Ko-fi membership workflow. This is an implementation in progress, **not a production-ready release**. See [PROGRESS.md](PROGRESS.md) for the exact verification and release gaps.
 
 ## Local development (Windows PowerShell)

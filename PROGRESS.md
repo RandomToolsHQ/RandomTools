@@ -1,5 +1,132 @@
 # RandomTools implementation status
 
+## Free pages.dev public tools preview — 31 October 2026
+
+The current owner-approved scope is zero-cost staging on Cloudflare-managed
+hostnames, with development authentication restricted to controlled testing.
+This entry supersedes earlier plans to require a domain or publish full accounts.
+
+### Live site and isolation
+
+- Public staging: **https://randomtools-preview.pages.dev**. Pages project
+  `randomtools-preview` uses Direct Upload in the connected Free account. Its
+  stable environment is called "Production" by Cloudflare; the application is
+  still a public tools preview, not an authenticated production service.
+- All 18 free tools and informational pages are available. Account, admin and
+  Pro workspace routes show a restricted-testing message. The public build
+  replaces auth/account modules with stubs, contains no Clerk SDK/development
+  keys or Pro workspace module, and has no API/D1/secret service bindings.
+- The public Pages guard denies every API path with JSON 403/no-store, including
+  requests with synthetic cookies or bearer credentials. It never forwards to
+  the application Worker. Public assets do not create an authentication cookie.
+- Verified HTTPS, CSP, nosniff, frame denial, no-referrer, HSTS and noindex on the
+  real host. The first upload exposed a duplicate-header-rule issue; combined
+  it into one rule, redeployed and reran hosted tests successfully. Local Pages
+  previews need restart after artifact replacement to reload header configuration.
+- Deployed public code corresponds to `3f57beb` (the header correction after
+  `d905593`). Uploaded archive SHA256:
+  `8f1e6506f5b0bd235dcede65a1bb72e871093a21cefe0722adfecfd0ab630e90`.
+
+### Clerk and D1
+
+- Implemented maintained Clerk frontend/backend SDK integration, explicit session
+  signature/issuer/frontend-party checks, active-session and verified-email
+  checks, immutable subject mapping, D1 roles/Pro checks, logout/revocation,
+  exports, recent-reauth deletion and signed deletion synchronization.
+- Retained the legacy 600k PBKDF2 adapter solely for local regression tests;
+  hosted modes reject it. Production rejects development Clerk keys.
+- Existing Clerk Hobby development instance is now **invite-only**. Staging API
+  also denies everyone unless their immutable Clerk subject is explicitly in
+  CLERK_TESTER_IDS. No paid provider features were enabled and no invitations,
+  real account emails or real payment transactions were sent by this agent.
+- Staging D1 `randomtools-staging` was created free; ID
+  `24d38e43-b765-4d21-b713-fce893d7317d`. All three migrations were applied via
+  the connected dashboard to the empty database. Verified schema and the
+  Wrangler-compatible migration ledger. Existing resources/data were preserved.
+- The standalone development-authenticated Worker is **not deployed publicly**.
+  Its config disables workers.dev/preview URLs and has no Paid CPU override.
+  The authenticated staging frontend was not uploaded to the public site.
+
+### Validation and source audit
+
+| Check | Current evidence |
+| --- | --- |
+| TypeScript and ESLint | Passed |
+| Unit/integration | 44 tests passed in 10 files; real local D1 plus mocked managed-provider boundary and real JWT verification |
+| Public preview local browsers | 32 checks passed, plus four added header checks passed after restarting preview |
+| Actual hosted preview | 36 checks passed in Chromium desktop/mobile, Firefox and WebKit, including all tools, themes, accessibility, headers and restriction checks |
+| Existing local browser suite | All 36 cases passed across the final run and focused rerun: 34 passed in parallel; Firefox axe and one WebKit click timed out, then both passed with one worker. Includes legacy account/recovery/deletion and explicit Pro fixtures |
+| Backup/restore | Real isolated Wrangler SQL export/import rehearsal passed with synthetic data |
+| API Worker | Dry-run passed; no claim of hosted account CPU validation |
+| Dependency audit | 0 runtime vulnerabilities |
+| Secret audit | Gitleaks 8.30.1 (official archive/checksum verified) scanned history, staged patches and generated artifacts; no real secrets found |
+
+An exact public Clerk publishable-key allowlist was added to Gitleaks after
+reviewing that false positive. It does not allow backend secret keys. Environment
+files, Wrangler state, archives, generated builds and the nested untracked
+`RandomTools/` checkout were excluded from commits. Source work is on
+`codex/clerk-free-staging`, retaining the original six local commits without
+rewriting history. CI validates both local and public artifacts; it does not
+automatically publish the authenticated application.
+
+### Remaining controlled-test/production work
+
+Wrangler login and secure staging secret provisioning remain required for the
+application API. The owner created a named Clerk backend key in the dashboard;
+its masked presence does not provision the Worker. Configure a separate
+controlled origin, approved tester subjects and signed deletion webhooks before
+hosted signup/recovery/OAuth/export/deletion tests. Measure actual Worker CPU,
+rate limits and cleanup on Free before opening account functionality. The public
+tools guard has passed hosted checks without executing password hashes; that
+does not prove the separate authenticated API fits the 10 ms budget.
+
+Future full production requires production identity configuration, isolated data
+and secrets, ownership/recovery/lifecycle validation and policy/security review.
+Clerk's production-domain requirement is a future provider constraint, not a
+requirement for the live free-hostname preview. No domain has been purchased.
+
+**No money was spent, no paid plan/trial/payment method or billing obligation was
+created, and live Ko-fi payments remain disabled.** See [STAGING.md](docs/STAGING.md)
+and [CLERK.md](docs/CLERK.md) for the current runbooks and limitations.
+
+## Free-plan feasibility review — 31 October 2026
+
+Reviewed staging/progress notes and authentication source; documented options,
+security constraints, conditional deployment plan and exact approval boundaries
+in [FREE-PLAN-REVIEW.md](docs/FREE-PLAN-REVIEW.md). Recommend evaluating managed
+authentication while retaining Pages/Worker/D1 on Free, subject to explicit
+architecture approval and hosted CPU validation. No work factor or authentication
+architecture changed. The Paid-only 30k CPU override remains unchanged pending
+that decision. Fresh fetch confirms the same six unpushed application commits.
+Targeted audit of 67 tracked files/109 reachable historical blobs found no live
+secrets; reviewed findings were test fixtures. A dedicated full secret scanner
+and final-index scan remain release gates. Browser tab inventory was accessible
+but page reconnection failed, so account subscription was not freshly verified.
+No accounts/resources created, secrets provisioned, code pushed, service purchased,
+public deployment performed or live payments enabled during this review.
+
+## Staging preparation follow-up — 31 October 2026
+
+- Verified access to origin with fetch/ls-remote. GitHub main remains `ab08aa1`
+  (initial commit); the existing local application at `e71b218` is six commits
+  ahead. No push or project recreation occurred. Preserved nested untracked
+  `RandomTools/` checkout.
+- Inspected the connected Cloudflare account: no Workers/Pages projects and no
+  D1 databases. Displayed quotas are consistent with Free; local Wrangler is
+  unauthenticated. No remote setup, purchase, email delivery, payments or
+  production deployment occurred.
+- Added isolated staging Worker/Pages configs, a staging build with noindex
+  headers, and [the staging runbook](docs/STAGING.md). Production security mode
+  is enabled; payments and email delivery remain disabled. Real origin, D1 ID,
+  secrets, approved email and suitable Worker plan remain blockers.
+- Revalidated TypeScript, lint, all 29 Vitest tests, Pages build and SEO checks;
+  staging Worker dry-run passed and both migrations applied to isolated local
+  staging D1. Confirmed Pages selects the staging service binding after adding
+  the separate staging package boundary. Local staging HTML returned 200 with
+  noindex headers; `/api/me` returned JSON 503 for the deliberately missing
+  production security secret. Hosted behaviour and the prior browser E2E suite
+  were not revalidated in this follow-up.
+
 Updated 31 October 2026 after the follow-up implementation and hardening pass. Work is in the existing RandomToolsHQ repository. No public deployment, remote push, real email delivery, live payment activation or service purchase has occurred.
 
 ## Follow-up work completed

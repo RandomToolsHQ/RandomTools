@@ -1,4 +1,13 @@
-# Deployment preparation — no deployment performed
+# Deployment reference
+
+**Current status:** The public tools-only preview is deployed on free pages.dev;
+use [STAGING.md](STAGING.md), which supersedes this historical launch-preparation
+runbook. The standalone authenticated API is not publicly deployed. Do not apply
+the generic production commands below to the public tools project.
+
+For the isolated staging configuration, current source/account verification and
+blockers, start with [STAGING.md](STAGING.md). The general commands below are not
+the staging runbook; use the dedicated staging config and database instead.
 
 Architecture: Pages frontend + Pages Function service proxy + separate Worker + D1. Review Cloudflare's [Pages service bindings](https://developers.cloudflare.com/pages/functions/bindings/#service-bindings) and [Worker configuration](https://developers.cloudflare.com/workers/wrangler/configuration/). The root `wrangler.toml` is the Pages config. `wrangler.api.toml` is exclusively the standalone API Worker config; its bindings do not automatically appear in Pages.
 
