@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { Copy, Download, RotateCcw, ShieldCheck, Play } from "lucide-react";
@@ -8,6 +8,7 @@ import { runRegex } from "./regex";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
 import { processFile } from "./files";
+import { imageExtension } from "./image-core";
 export default function ToolPage() {
   const { id } = useParams();
   const tool = tools.find((t) => t.id === id);
@@ -18,19 +19,15 @@ export default function ToolPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [image, setImage] = useState("");
+  const [compressed, setCompressed] = useState<{
+    blob: Blob;
+    name: string;
+  } | null>(null);
   const availability = useQuery({
     queryKey: ["tools"],
     queryFn: () => api("/tools"),
     staleTime: 300000,
   });
-  useEffect(() => {
-    setInput("");
-    setOther("");
-    setMode("");
-    setOutput("");
-    setImage("");
-    setError("");
-  }, [id]);
   if (!tool) return <h1>Tool not found</h1>;
   if (
     availability.data?.availability?.some(
@@ -75,9 +72,13 @@ export default function ToolPage() {
         setOutput((await processFile(file, "hash")).hash!);
       } else {
         const blob = (await processFile(file, "image")).blob!;
-        download(blob, file.name.replace(/\.[^.]+$/, "") + ".webp");
+        const extension = imageExtension(blob);
+        setCompressed({
+          blob,
+          name: file.name.replace(/\.[^.]+$/, "") + "." + extension,
+        });
         setOutput(
-          `Original: ${file.size.toLocaleString()} bytes\nWebP: ${blob.size.toLocaleString()} bytes\nSaved ${Math.round((1 - blob.size / file.size) * 100)}% (some images may grow).`,
+          `Original: ${file.size.toLocaleString()} bytes\nCompressed (${extension.toUpperCase()}): ${blob.size.toLocaleString()} bytes\nSaved ${Math.round((1 - blob.size / file.size) * 100)}% (some images may grow).\nWebP is preferred; browsers without that encoder use JPEG for JPEG inputs and PNG otherwise. Maximum dimension: 1920px.`,
         );
       }
       if (localStorage.getItem("analytics") === "true")
@@ -246,7 +247,9 @@ export default function ToolPage() {
             <button
               aria-label="Download result"
               onClick={() => {
-                if (image) {
+                if (compressed) {
+                  download(compressed.blob, compressed.name);
+                } else if (image) {
                   const a = document.createElement("a");
                   a.href = image;
                   a.download = "qr-code.png";
@@ -263,6 +266,7 @@ export default function ToolPage() {
                 setOther("");
                 setOutput("");
                 setImage("");
+                setCompressed(null);
                 setError("");
               }}
             >

@@ -1129,3 +1129,64 @@ html[data-theme="light"] .tabs button.active {
     scroll-behavior: auto !important;
   }
 }
+
+/* Keep small text readable in both themes; brand indigo remains on accents. */
+.primary {
+  background: #595cde;
+}
+.primary:hover {
+  background: #4f52cb;
+}
+.values small,
+footer small,
+.card-bottom,
+.count,
+.art-caption {
+  color: var(--muted);
+}
+html[data-theme="light"] .hero-pill,
+html[data-theme="light"] .hero-trust,
+html[data-theme="light"] .hq,
+html[data-theme="light"] footer > div:nth-child(2),
+html[data-theme="light"] .analytics-toggle {
+  color: #526079;
+}
+html[data-theme="light"] .eyebrow {
+  color: #5946ac;
+}
+html[data-theme="light"] .tiny {
+  color: #5946ac;
+  background: #e9e5fa;
+}
+html[data-theme="light"] .free-label {
+  color: #356e5d;
+}
+html[data-theme="light"] .badge {
+  color: #356e5d;
+}
+html[data-theme="light"] .tool-icon {
+  color: #5145b5;
+  background: #eeecfb;
+}
+html[data-theme="light"] .tool-icon.tone-1 {
+  color: #14718b;
+  background: #e6f3f8;
+}
+html[data-theme="light"] .tool-icon.tone-2 {
+  color: #80519b;
+  background: #f1eafa;
+}
+html[data-theme="light"] .tool-icon.tone-3 {
+  color: #246e5b;
+  background: #e5f3ed;
+}
+html[data-theme="light"] .error {
+  color: #a42c3e;
+}
+html[data-theme="light"] .form-page .links,
+html[data-theme="light"] .prose a {
+  color: #5145a8;
+}
+.form-page .links {
+  flex-wrap: wrap;
+}

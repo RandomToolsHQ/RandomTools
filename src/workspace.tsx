@@ -5,6 +5,7 @@ import { api } from "./api";
 import { convert, download } from "./engines";
 import { runRegex } from "./regex";
 import { processFile } from "./files";
+import { imageExtension } from "./image-core";
 type Action = (fn: () => Promise<any>) => Promise<any>;
 export default function ProWorkspace({
   action,
@@ -114,6 +115,8 @@ export default function ProWorkspace({
       if (files.length > 20) throw Error("Limit: 20 files per batch.");
       let total = 0;
       const records = [];
+      const archive: Record<string, Uint8Array> = {};
+      let outputBytes = 0;
       for (const f of Array.from(files)) {
         total += f.size;
         if (f.size > 25 * 1024 * 1024 || total > 100 * 1024 * 1024)
@@ -127,13 +130,26 @@ export default function ProWorkspace({
           });
         } else {
           const blob = (await processFile(f, "image")).blob!;
-          download(blob, f.name + ".webp");
+          outputBytes += blob.size;
+          if (outputBytes > 100 * 1024 * 1024)
+            throw Error("Compressed output exceeds the 100 MB batch limit.");
+          const filename = `${records.length + 1}-${f.name.replace(/\.[^.]+$/, "").replace(/[\\/:*?"<>|]/g, "_")}.${imageExtension(blob)}`;
+          archive[filename] = new Uint8Array(await blob.arrayBuffer());
           records.push({
             name: f.name,
             original: f.size,
             compressed: blob.size,
+            format: blob.type,
           });
         }
+      }
+      if (fileMode === "image") {
+        const { zipSync } = await import("fflate");
+        const zip = zipSync(archive, { level: 0 });
+        download(
+          new Blob([zip.buffer as ArrayBuffer], { type: "application/zip" }),
+          "randomtools-images.zip",
+        );
       }
       setResult(JSON.stringify(records, null, 2));
       return { message: "Batch processed on this device." };
@@ -306,7 +322,7 @@ export default function ProWorkspace({
             onChange={(e) => setFileMode(e.target.value)}
           >
             <option value="hash">SHA-256 hashing</option>
-            <option value="image">WebP image compression</option>
+            <option value="image">Image compression → ZIP</option>
           </select>
         </label>
         <label>

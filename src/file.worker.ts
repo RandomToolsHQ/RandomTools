@@ -1,3 +1,4 @@
+import { validateImage, imageSize } from "./image-core";
 self.onmessage = async (
   event: MessageEvent<{ file: File; operation: "hash" | "image" }>,
 ) => {
@@ -16,24 +17,27 @@ self.onmessage = async (
       });
       return;
     }
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type))
-      throw Error("Choose a JPEG, PNG or WebP image.");
+    validateImage(file);
+    if (typeof OffscreenCanvas === "undefined") {
+      self.postMessage({ fallback: true });
+      return;
+    }
     const bitmap = await createImageBitmap(file);
     try {
-      if (bitmap.width * bitmap.height > 24000000)
-        throw Error("Image exceeds 24 megapixels.");
-      const scale = Math.min(1, 1920 / Math.max(bitmap.width, bitmap.height));
-      const canvas = new OffscreenCanvas(
-        Math.max(1, Math.round(bitmap.width * scale)),
-        Math.max(1, Math.round(bitmap.height * scale)),
-      );
-      canvas
-        .getContext("2d")!
-        .drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-      const blob = await canvas.convertToBlob({
+      const size = imageSize(bitmap.width, bitmap.height);
+      const canvas = new OffscreenCanvas(size.width, size.height);
+      const context = canvas.getContext("2d");
+      if (!context) {
+        self.postMessage({ fallback: true });
+        return;
+      }
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      let blob = await canvas.convertToBlob({
         type: "image/webp",
         quality: 0.8,
       });
+      if (blob.type !== "image/webp" && file.type === "image/jpeg")
+        blob = await canvas.convertToBlob({ type: "image/jpeg", quality: 0.8 });
       self.postMessage({ blob });
     } finally {
       bitmap.close();
