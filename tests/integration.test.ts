@@ -118,7 +118,7 @@ describe("Worker + real local D1", () => {
       ).status,
     ).toBe(200);
   }, 60000);
-  it("delivers production email only through a mocked provider, hides account existence and records failures", async () => {
+  it("delivers the retired email adapter only through a mocked provider, hides account existence and records failures", async () => {
     const provider = vi
       .fn()
       .mockResolvedValue(Response.json({ id: "mock-provider-message" }));
@@ -126,7 +126,7 @@ describe("Worker + real local D1", () => {
     const env = {
       DB: db,
       APP_ORIGIN: "https://app.example.test",
-      ENVIRONMENT: "production",
+      ENVIRONMENT: "test",
       PAYMENTS_ENABLED: "false",
       RATE_LIMIT_SECRET: "test-only-rate-secret-".repeat(3),
       EMAIL_PROVIDER: "resend",

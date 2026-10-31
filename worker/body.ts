@@ -1,6 +1,6 @@
 export class BodyTooLarge extends Error {}
 export async function readBody(
-  request: Request,
+  request: Pick<Request, "headers" | "body">,
   maxBytes: number,
 ): Promise<string> {
   const length = Number(request.headers.get("content-length") || 0);

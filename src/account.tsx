@@ -1,3 +1,4 @@
+import { managedAuth, managedSignOut, ManagedSignIn, ManagedSecurity } from "./auth";
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +41,7 @@ export default function Account({ page }: { page: string }) {
     "reset-password",
     "verify-email",
   ].includes(page);
+  if (auth && managedAuth) return <ManagedSignIn page={page} />;
   if (auth)
     return (
       <section className="form-page">
@@ -200,6 +202,7 @@ export default function Account({ page }: { page: string }) {
           onClick={() =>
             void action(async () => {
               const r = await api("/auth/logout", {});
+              if (managedAuth) await managedSignOut();
               window.location.assign("/");
               return r;
             })
@@ -245,42 +248,48 @@ export default function Account({ page }: { page: string }) {
               <button className="primary">Save profile</button>
             </form>
           </div>
-          <div className="panel">
-            <h2>Change password</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void action(() =>
-                  api(
-                    "/account/password",
-                    Object.fromEntries(new FormData(e.currentTarget)),
-                  ),
-                );
-              }}
-            >
-              <label>
-                Current password
-                <input
-                  name="currentPassword"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                />
-              </label>
-              <label>
-                New password
-                <input
-                  name="password"
-                  type="password"
-                  minLength={12}
-                  maxLength={128}
-                  required
-                  autoComplete="new-password"
-                />
-              </label>
-              <button className="secondary">Change and revoke sessions</button>
-            </form>
-          </div>
+          {managedAuth ? (
+            <ManagedSecurity />
+          ) : (
+            <div className="panel">
+              <h2>Change password</h2>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void action(() =>
+                    api(
+                      "/account/password",
+                      Object.fromEntries(new FormData(e.currentTarget)),
+                    ),
+                  );
+                }}
+              >
+                <label>
+                  Current password
+                  <input
+                    name="currentPassword"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                  />
+                </label>
+                <label>
+                  New password
+                  <input
+                    name="password"
+                    type="password"
+                    minLength={12}
+                    maxLength={128}
+                    required
+                    autoComplete="new-password"
+                  />
+                </label>
+                <button className="secondary">
+                  Change and revoke sessions
+                </button>
+              </form>
+            </div>
+          )}
           <div className="panel">
             <h2>Your data</h2>
             <p>
@@ -314,7 +323,9 @@ export default function Account({ page }: { page: string }) {
                 void action(async () => {
                   const r = await api(
                     "/account",
-                    Object.fromEntries(new FormData(e.currentTarget)),
+                    managedAuth
+                      ? { confirmation: "DELETE" }
+                      : Object.fromEntries(new FormData(e.currentTarget)),
                     "DELETE",
                   );
                   window.location.assign("/");
@@ -322,15 +333,22 @@ export default function Account({ page }: { page: string }) {
                 });
               }}
             >
-              <label>
-                Confirm password
-                <input
-                  name="password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                />
-              </label>
+              {managedAuth ? (
+                <p>
+                  Sign in again within five minutes before deleting. This also
+                  deletes your Clerk identity.
+                </p>
+              ) : (
+                <label>
+                  Confirm password
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                  />
+                </label>
+              )}
               <label>
                 <input type="checkbox" required /> I understand that deletion is
                 permanent.

@@ -1,3 +1,12 @@
+import {
+  managedCurrent,
+  managedWebhook,
+  deleteManaged,
+  clerkClient,
+  AuthError,
+  type ClerkEnvironment,
+  type ManagedUser,
+} from "./clerk";
 import { z } from "zod";
 import { tools, pricing } from "../src/catalog";
 import { deliverEmail, emailMode, type EmailEnvironment } from "./email";
@@ -10,7 +19,7 @@ import {
   token,
   verifyPassword,
 } from "./security";
-interface Env extends EmailEnvironment {
+interface Env extends EmailEnvironment, ClerkEnvironment {
   DB: D1Database;
   APP_ORIGIN: string;
   ENVIRONMENT: string;
@@ -73,6 +82,7 @@ async function rate(env: Env, key: string, limit = 10) {
     fail(429, "Too many attempts. Please try again in 15 minutes.");
 }
 async function current(req: Request, env: Env) {
+  if (env.AUTH_PROVIDER === "clerk") return managedCurrent(req, env);
   const cookie = req.headers
     .get("cookie")
     ?.match(/(?:^|;\s*)rt_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -99,7 +109,7 @@ async function audit(env: Env, actor: string, action: string, target: string) {
     .run();
 }
 function cookie(value: string, env: Env, age = 604800) {
-  return `rt_session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${age}${env.ENVIRONMENT === "production" ? "; Secure" : ""}`;
+  return `rt_session=${value}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${age}${["production", "staging"].includes(env.ENVIRONMENT) ? "; Secure" : ""}`;
 }
 async function issue(
   env: Env,
@@ -179,19 +189,23 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     path = url.pathname.replace(/^\/api/, "");
   if (
     !env.APP_ORIGIN ||
-    !["development", "production", "test"].includes(env.ENVIRONMENT)
+    !["development", "production", "staging", "test"].includes(env.ENVIRONMENT)
   )
     fail(503, "Invalid server configuration");
   const appOrigin = z.url().safeParse(env.APP_ORIGIN);
   if (!appOrigin.success || new URL(env.APP_ORIGIN).origin !== env.APP_ORIGIN)
     fail(503, "APP_ORIGIN must be an exact origin");
   if (
-    env.ENVIRONMENT === "production" &&
+    ["production", "staging"].includes(env.ENVIRONMENT) &&
     (!env.RATE_LIMIT_SECRET ||
       env.RATE_LIMIT_SECRET.length < 32 ||
       !/^https:\/\/[^/]+$/.test(env.APP_ORIGIN))
   )
     fail(503, "Production security configuration is incomplete");
+  if (path === "/webhooks/clerk" && req.method === "POST") {
+    await readBody(req.clone(), 65536);
+    return managedWebhook(req, env);
+  }
   if (path === "/webhooks/kofi" && req.method === "POST")
     return webhook(req, env);
   if (!["GET", "HEAD"].includes(req.method)) {
@@ -202,6 +216,17 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     )
       fail(403, "Request origin rejected");
   }
+  if (
+    ["production", "staging"].includes(env.ENVIRONMENT) &&
+    env.AUTH_PROVIDER !== "clerk"
+  )
+    fail(503, "Managed authentication is required on hosting");
+  if (
+    env.AUTH_PROVIDER === "clerk" &&
+    ((path.startsWith("/auth/") && path !== "/auth/logout") ||
+      path === "/account/password")
+  )
+    fail(410, "Use the secure Clerk account controls");
   const ip = req.headers.get("CF-Connecting-IP") || "local";
   if (path.startsWith("/auth/"))
     await rate(
@@ -377,6 +402,12 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
   if (!user) fail(401, "Sign in to continue");
   const u = user!;
   if (path === "/auth/logout" && req.method === "POST") {
+    if (env.AUTH_PROVIDER === "clerk") {
+      await clerkClient(env).sessions.revokeSession(
+        (u as ManagedUser).clerk.sessionId,
+      );
+      return json({ message: "Signed out" });
+    }
     const raw =
       req.headers.get("cookie")?.match(/rt_session=([a-f0-9]{64})/)?.[1] || "";
     await env.DB.prepare("DELETE FROM sessions WHERE token_hash=?")
@@ -418,6 +449,16 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     });
   }
   if (path === "/account" && req.method === "DELETE") {
+    if (env.AUTH_PROVIDER === "clerk") {
+      const body = z
+        .object({ confirmation: z.literal("DELETE") })
+        .strict()
+        .parse(await parse(req));
+      if (body.confirmation !== "DELETE") fail(400, "Confirm deletion");
+      await audit(env, u.id, "account.delete.requested", u.id);
+      await deleteManaged(env, u as ManagedUser);
+      return json({ message: "Account and saved data deleted" });
+    }
     const b = z
       .object({ password: z.string().max(128) })
       .parse(await parse(req));
@@ -440,6 +481,14 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       "payment_events",
     ];
     const data: Record<string, unknown> = { profile: safeUser(u) };
+    if (env.AUTH_PROVIDER === "clerk") {
+      const identity = (u as ManagedUser).clerk;
+      data.authentication = {
+        provider: "clerk",
+        issuer: identity.issuer,
+        subject: identity.subject,
+      };
+    }
     for (const t of tables)
       data[t] = (
         await env.DB.prepare(`SELECT * FROM ${t} WHERE user_id=?`)
@@ -851,7 +900,7 @@ export default {
       response =
         e instanceof BodyTooLarge
           ? json({ error: "Request too large" }, 413)
-          : e instanceof HttpError
+          : e instanceof HttpError || e instanceof AuthError
             ? json({ error: e.message }, e.status)
             : e instanceof z.ZodError || e instanceof SyntaxError
               ? json({ error: "Invalid input" }, 400)
@@ -866,7 +915,7 @@ export default {
       "Content-Security-Policy",
       "default-src 'none'; frame-ancestors 'none'",
     );
-    if (env.ENVIRONMENT === "production")
+    if (["production", "staging"].includes(env.ENVIRONMENT))
       h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
     return new Response(response.body, { status: response.status, headers: h });
   },

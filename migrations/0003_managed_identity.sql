@@ -1,0 +1,1 @@
+CREATE TABLE auth_identities ( issuer TEXT NOT NULL, subject TEXT NOT NULL, user_id TEXT UNIQUE REFERENCES users(id) ON DELETE SET NULL, state TEXT NOT NULL DEFAULT 'active' CHECK(state IN ('active','deleting','deleted')), created_at INTEGER NOT NULL, PRIMARY KEY(issuer,subject) );

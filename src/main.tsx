@@ -1,3 +1,4 @@
+import { Authentication } from "./auth";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -643,7 +644,9 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={client}>
       <BrowserRouter>
-        <App />
+        <Authentication>
+          <App />
+        </Authentication>
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
