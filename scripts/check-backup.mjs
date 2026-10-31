@@ -38,7 +38,8 @@ await writeFile(
   `INSERT INTO users VALUES('backup-fixture','backup@example.test','O''Brien','synthetic-not-a-password','free',1,0,1);
 INSERT INTO user_preferences VALUES('backup-fixture','{"theme":"light","favorites":["json"]}',7);
 INSERT INTO saved_presets VALUES('preset','backup-fixture','workflow','Saved workflow','{"steps":["trim","lower"]}',1);
-INSERT INTO tool_history VALUES('history','backup-fixture','case','Private fixture output',1);`,
+INSERT INTO tool_history VALUES('history','backup-fixture','case','Private fixture output',1);
+INSERT INTO auth_identities VALUES('https://backup.clerk.accounts.dev','user_backup','backup-fixture','active',1);`,
 );
 await run(source, ["execute", "backup-fixture", "--file", fixture]);
 const backup = join(root, "export.sql");
@@ -68,6 +69,14 @@ if (
 )
   throw Error("Restored workflow differs");
 const integrity = await query("PRAGMA foreign_key_check");
+const identity = await query(
+  "SELECT user_id,state FROM auth_identities WHERE subject='user_backup'",
+);
+if (
+  identity[0].results[0]?.user_id !== "backup-fixture" ||
+  identity[0].results[0]?.state !== "active"
+)
+  throw Error("Restored immutable identity mapping differs");
 if (integrity.some((result) => result.results.length))
   throw Error("Restored foreign keys are invalid");
 await query("DELETE FROM users WHERE id='backup-fixture'");
@@ -76,6 +85,14 @@ const cascades = await query(
 );
 if (cascades[0].results[0]?.remaining !== 0)
   throw Error("Restored deletion constraints failed");
+const tombstone = await query(
+  "SELECT user_id FROM auth_identities WHERE subject='user_backup'",
+);
+if (
+  tombstone[0].results.length !== 1 ||
+  tombstone[0].results[0].user_id !== null
+)
+  throw Error("Restored identity deletion guard was lost");
 process.stdout.write(
   "Local Wrangler backup/restore passed: profile, workflow, foreign keys and account deletion.\nSynthetic artifacts: " +
     root +

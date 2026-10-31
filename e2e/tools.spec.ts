@@ -14,7 +14,7 @@ test("directory search and JSON tool work without an account", async ({
     .getByRole("link", { name: "Explore tools" })
     .click();
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
-  await page.getByRole("textbox", { name: "Search tools" }).fill("JSON");
+  await page.getByRole("textbox", { name: "Search tools" }).fill("  JSON  ");
   await expect(
     page.getByRole("heading", { name: "JSON formatter" }),
   ).toBeVisible();
@@ -27,6 +27,10 @@ test("directory search and JSON tool work without an account", async ({
   await page.getByLabel("Input", { exact: true }).fill("invalid");
   await page.getByRole("button", { name: "Run tool" }).click();
   await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByLabel("Result", { exact: true })).toHaveValue("");
+  await expect(
+    page.getByRole("button", { name: "Download result" }),
+  ).toBeDisabled();
 });
 test("mobile navigation exposes tools and Pro", async ({
   page,
@@ -38,6 +42,16 @@ test("mobile navigation exposes tools and Pro", async ({
     await expect(
       page.getByRole("navigation").getByRole("link", { name: "Explore tools" }),
     ).toBeVisible();
+    await page
+      .getByRole("navigation")
+      .getByRole("link", { name: "Explore tools" })
+      .press("Escape");
+    await expect(
+      page.getByRole("button", { name: "Toggle navigation" }),
+    ).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      page.getByRole("button", { name: "Toggle navigation" }),
+    ).toBeFocused();
   }
   await expect(
     page.getByRole("heading", { name: /Your everyday toolkit/ }),

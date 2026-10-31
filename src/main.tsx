@@ -148,7 +148,19 @@ function App() {
             </span>
             RandomTools<span className="hq">HQ</span>
           </Link>
-          <nav className={menu ? "open" : ""} aria-label="Main navigation">
+          <nav
+            id="main-navigation"
+            className={menu ? "open" : ""}
+            aria-label="Main navigation"
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setMenu(false);
+                document
+                  .querySelector<HTMLButtonElement>(".mobile-toggle")
+                  ?.focus();
+              }
+            }}
+          >
             <Link to="/tools">Explore tools</Link>
             <Link to="/pro">
               RandomTools Pro <span className="tiny">PRO</span>
@@ -181,6 +193,7 @@ function App() {
               className="mobile-toggle"
               aria-label="Toggle navigation"
               aria-expanded={menu}
+              aria-controls="main-navigation"
               onClick={() => setMenu(!menu)}
             >
               {menu ? <X /> : <Menu />}
@@ -333,7 +346,7 @@ function Directory({ home = false }: { home?: boolean }) {
         t.category === category) &&
       (t.name + " " + t.description)
         .toLowerCase()
-        .includes(search.toLowerCase()),
+        .includes(search.trim().toLowerCase()),
   );
   function toggle(id: string) {
     const next = favorites.includes(id)

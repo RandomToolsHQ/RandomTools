@@ -1,4 +1,56 @@
 import { test, expect } from "@playwright/test";
+import { readFile } from "node:fs/promises";
+
+test("downloads contain the result and failed files cannot reuse an old download", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/tools/base64");
+  await expect(
+    page.getByRole("button", { name: "Download result" }),
+  ).toBeDisabled();
+  await page.locator("#input").fill("Hello 🌏");
+  await page.getByRole("button", { name: "Run tool" }).click();
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download result" }).click();
+  const file = await downloading;
+  expect(file.suggestedFilename()).toBe("base64-result.txt");
+  const path = testInfo.outputPath("base64.txt");
+  await file.saveAs(path);
+  expect(await readFile(path, "utf8")).toBe("SGVsbG8g8J+Mjw==");
+  await page.goto("/tools/image");
+  const png = await page.screenshot({
+    clip: { x: 0, y: 0, width: 40, height: 40 },
+  });
+  const input = page.locator("input[type=file]");
+  await input.setInputFiles({
+    name: "valid.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await expect(
+    page.getByRole("button", { name: "Download result" }),
+  ).toBeEnabled();
+  await input.setInputFiles({
+    name: "bad.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("not an image"),
+  });
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("#output")).toHaveValue("");
+  await expect(
+    page.getByRole("button", { name: "Download result" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Reset", exact: true }).click();
+  await expect(input).toHaveValue("");
+  await input.setInputFiles({
+    name: "valid.png",
+    mimeType: "image/png",
+    buffer: png,
+  });
+  await expect(
+    page.getByRole("button", { name: "Download result" }),
+  ).toBeEnabled();
+});
 test("all text tools produce useful browser results", async ({ page }) => {
   for (const [id, input, other, expected] of [
     ["base64", "Hello 🌏", "", "SGVsbG8g8J+Mjw=="],
@@ -37,6 +89,11 @@ test("QR, hashing and image compression process local inputs", async ({
   await expect(
     page.getByRole("img", { name: "Generated QR code" }),
   ).toBeVisible();
+  const qrDownloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download result" }).click();
+  const qr = await qrDownloading;
+  expect(qr.suggestedFilename()).toBe("qr-code.png");
+  expect(await qr.failure()).toBeNull();
   await page.goto("/tools/hash");
   await page.locator("input[type=file]").setInputFiles({
     name: "hello.txt",

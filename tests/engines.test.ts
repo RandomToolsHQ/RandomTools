@@ -1,6 +1,26 @@
 import { describe, it, expect } from "vitest";
 import { convert, password, randomInt } from "../src/engines";
 describe("free tool engines", () => {
+  it("rejects explicit invalid lengths and empty random bounds", () => {
+    for (const value of ["0", "abc", "7", "8.5", "129"])
+      expect(() => convert("password", value, "", "")).toThrow();
+    expect(convert("password", "", "", "")).toHaveLength(20);
+    expect(() => convert("random", " ", "", "4")).toThrow();
+    expect(() => convert("random", "0", "", " ")).toThrow();
+  });
+  it("handles accented case conversion and uppercase entity references", () => {
+    expect(convert("case", "résumé café", "slug", "")).toBe("resume-cafe");
+    expect(convert("case", "élan déjà don't", "title", "")).toBe(
+      "Élan Déjà Don't",
+    );
+    expect(convert("html", "&AMP; &LT; &#X1F30F;", "decode", "")).toBe(
+      "& < 🌏",
+    );
+    expect(convert("html", "&#xD800;", "decode", "")).toBe("�");
+    expect(convert("html", "&copy; &nbsp; &NotEqualTilde;", "decode", "")).toBe(
+      "© \u00a0 ≂̸",
+    );
+  });
   it("accepts RGB, HSL and shorthand HEX and rejects invalid channels", () => {
     expect(convert("colour", "hsl(120, 100%, 50%)", "", "")).toContain(
       "#00FF00",

@@ -100,6 +100,210 @@ beforeEach(() => {
   });
 });
 describe("managed Clerk identity with real isolated D1", () => {
+  it("checks every Pro storage verb, paid-through expiry and cross-user ownership", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    const call = (path: string, method = "GET", body?: unknown) =>
+      worker.fetch(
+        new Request(origin + "/api" + path, {
+          method,
+          headers: {
+            authorization: "Bearer synthetic-fixture",
+            origin,
+            "content-type": "application/json",
+          },
+          body: body === undefined ? undefined : JSON.stringify(body),
+        }),
+        env,
+      );
+    const verbs = [
+      ["preferences", "GET"],
+      ["preferences", "PUT"],
+      ["presets", "GET"],
+      ["presets", "POST"],
+      ["presets", "DELETE"],
+      ["history", "GET"],
+      ["history", "POST"],
+      ["history", "DELETE"],
+    ];
+    for (const [path, method] of verbs)
+      expect(
+        (await call("/pro/" + path, method, method === "GET" ? undefined : {}))
+          .status,
+      ).toBe(403);
+    await db
+      .prepare("INSERT INTO subscriptions VALUES(?,?,NULL,?,'fixture',1)")
+      .bind("sub_" + subject, user.id, Math.floor(Date.now() / 1000) + 3600)
+      .run();
+    expect(
+      (
+        await call("/pro/presets", "POST", {
+          kind: "workflow",
+          name: "Mine",
+          data: { steps: ["trim", "lower"] },
+          user_id: "victim",
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await call("/pro/preferences", "PUT", {
+          data: { favourites: ["json"] },
+          retentionDays: 7,
+        })
+      ).status,
+    ).toBe(200);
+    expect(
+      (await call("/pro/history", "POST", { tool: "case", data: "private" }))
+        .status,
+    ).toBe(200);
+    const own = (await (await call("/pro/presets")).json()) as any[];
+    expect(own).toHaveLength(1);
+    expect(own[0].user_id).toBe(user.id);
+    const victim = "victim_" + subject;
+    await db
+      .prepare(
+        "INSERT INTO users(id,email,name,password_hash,created_at) VALUES(?,?,'Victim','managed:clerk',1)",
+      )
+      .bind(victim, victim + "@example.test")
+      .run();
+    await db
+      .prepare("INSERT INTO saved_presets VALUES(?,?,'preset','Victim','{}',1)")
+      .bind(victim, victim)
+      .run();
+    await call("/pro/presets", "DELETE", { id: victim });
+    expect(
+      await db
+        .prepare("SELECT id FROM saved_presets WHERE id=?")
+        .bind(victim)
+        .first(),
+    ).not.toBeNull();
+    expect(
+      JSON.stringify(
+        await (await call("/account/export?user_id=" + victim)).json(),
+      ),
+    ).not.toContain('"name":"Victim"');
+    expect(
+      (await call("/pro/preferences", "PUT", { data: {}, retentionDays: 0 }))
+        .status,
+    ).toBe(200);
+    await call("/pro/history", "POST", { tool: "case", data: "do not retain" });
+    expect(await (await call("/pro/history")).json()).toEqual([]);
+    await db
+      .prepare("UPDATE subscriptions SET paid_through=1 WHERE user_id=?")
+      .bind(user.id)
+      .run();
+    for (const [path, method] of verbs)
+      expect(
+        (await call("/pro/" + path, method, method === "GET" ? undefined : {}))
+          .status,
+      ).toBe(403);
+  });
+  it("rejects privilege injection, gates every admin mutation and audits authorized changes", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    const call = (
+      path: string,
+      body?: unknown,
+      method = body ? "POST" : "GET",
+    ) =>
+      worker.fetch(
+        new Request(origin + "/api" + path, {
+          method,
+          headers: {
+            authorization: "Bearer synthetic-fixture",
+            origin,
+            "content-type": "application/json",
+          },
+          body: body ? JSON.stringify(body) : undefined,
+        }),
+        env,
+      );
+    await call(
+      "/account",
+      { name: "Still free", role: "admin", pro: true },
+      "PATCH",
+    );
+    expect((await managedCurrent(req(), env))!.role).toBe("free");
+    for (const path of [
+      "/admin",
+      "/admin/users",
+      "/admin/tools",
+      "/admin/reconcile",
+      "/admin/subscriptions/revoke",
+      "/admin/mock-payment",
+    ])
+      expect(
+        (await call(path, path === "/admin" ? undefined : { role: "admin" }))
+          .status,
+      ).toBe(403);
+    await db
+      .prepare("UPDATE users SET role='admin' WHERE id=?")
+      .bind(user.id)
+      .run();
+    expect((await call("/admin?search=' OR 1=1 --")).status).toBe(200);
+    expect(
+      (await call("/admin/users", { id: user.id, disabled: true })).status,
+    ).toBe(400);
+    expect((await call("/admin/mock-payment", {})).status).toBe(404);
+    const target = "admin_target_" + subject;
+    await db
+      .prepare(
+        "INSERT INTO users(id,email,name,password_hash,created_at) VALUES(?,?,'Target','managed:clerk',1)",
+      )
+      .bind(target, target + "@example.test")
+      .run();
+    expect(
+      (await call("/admin/users", { id: target, disabled: true })).status,
+    ).toBe(200);
+    expect(
+      await db
+        .prepare("SELECT disabled,role FROM users WHERE id=?")
+        .bind(target)
+        .first(),
+    ).toMatchObject({ disabled: 1, role: "free" });
+    expect(
+      (await call("/admin/users", { id: target, disabled: false })).status,
+    ).toBe(200);
+    expect(
+      await db
+        .prepare("SELECT disabled FROM users WHERE id=?")
+        .bind(target)
+        .first(),
+    ).toMatchObject({ disabled: 0 });
+    expect(
+      (await call("/admin/users", { id: "missing", disabled: true })).status,
+    ).toBe(404);
+    expect(
+      (
+        await call("/admin/subscriptions/revoke", {
+          id: "missing",
+          reason: "manual",
+        })
+      ).status,
+    ).toBe(404);
+    expect(
+      (await call("/admin/tools", { tool: "missing", enabled: false })).status,
+    ).toBe(400);
+    expect(
+      await db
+        .prepare(
+          "SELECT actor_id FROM audit_logs WHERE actor_id=? AND target_id='missing'",
+        )
+        .bind(user.id)
+        .first(),
+    ).toBeNull();
+    expect(
+      (await call("/admin/tools", { tool: "json", enabled: false })).status,
+    ).toBe(200);
+    expect(
+      await db
+        .prepare(
+          "SELECT actor_id FROM audit_logs WHERE actor_id=? AND action='tool.availability:false'",
+        )
+        .bind(user.id)
+        .first(),
+    ).not.toBeNull();
+    await call("/admin/tools", { tool: "json", enabled: true });
+  });
   it("denies staging testers not explicitly allowlisted before data provisioning", async () => {
     await expect(
       managedCurrent(req(), { ...env, CLERK_TESTER_IDS: "[]" }),

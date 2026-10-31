@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { Copy, Download, RotateCcw, ShieldCheck, Play } from "lucide-react";
@@ -17,6 +17,16 @@ export default function ToolPage() {
   const [mode, setMode] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [hasResult, setHasResult] = useState(false);
+  const job = useRef(0);
+  const fileInput = useRef<HTMLInputElement>(null);
+  useEffect(
+    () => () => {
+      job.current++;
+    },
+    [],
+  );
   const [busy, setBusy] = useState(false);
   const [image, setImage] = useState("");
   const [compressed, setCompressed] = useState<{
@@ -40,38 +50,54 @@ export default function ToolPage() {
         <p>Please check back later.</p>
       </section>
     );
-  async function run() {
+  function begin() {
+    job.current++;
     setError("");
+    setNotice("");
+    setOutput("");
+    setImage("");
+    setCompressed(null);
+    setHasResult(false);
     setBusy(true);
+    return job.current;
+  }
+  async function run() {
+    const current = begin();
     try {
       if (id === "qr") {
         if (!input || input.length > 2000)
           throw Error("Enter 1–2,000 characters.");
-        setImage(await QRCode.toDataURL(input, { width: 640, margin: 2 }));
+        const result = await QRCode.toDataURL(input, { width: 640, margin: 2 });
+        if (current !== job.current) return;
+        setImage(result);
         setOutput(input);
       } else if (id === "regex") {
         const result = await runRegex(input, mode || "g", other);
+        if (current !== job.current) return;
         setOutput(result);
       } else setOutput(convert(id!, input, mode, other));
+      setHasResult(true);
       if (localStorage.getItem("analytics") === "true")
         void api("/usage", { tool: id }).catch(() => {});
     } catch (e) {
-      setError((e as Error).message);
+      if (current === job.current) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (current === job.current) setBusy(false);
     }
   }
   async function file(file?: File) {
     if (!file) return;
-    setBusy(true);
-    setError("");
+    const current = begin();
     try {
       if (file.size > 25 * 1024 * 1024)
         throw Error("Files must be under 25 MB.");
       if (id === "hash") {
-        setOutput((await processFile(file, "hash")).hash!);
+        const result = await processFile(file, "hash");
+        if (current !== job.current) return;
+        setOutput(result.hash!);
       } else {
         const blob = (await processFile(file, "image")).blob!;
+        if (current !== job.current) return;
         const extension = imageExtension(blob);
         setCompressed({
           blob,
@@ -81,12 +107,13 @@ export default function ToolPage() {
           `Original: ${file.size.toLocaleString()} bytes\nCompressed (${extension.toUpperCase()}): ${blob.size.toLocaleString()} bytes\nSaved ${Math.round((1 - blob.size / file.size) * 100)}% (some images may grow).\nWebP is preferred; browsers without that encoder use JPEG for JPEG inputs and PNG otherwise. Maximum dimension: 1920px.`,
         );
       }
+      setHasResult(true);
       if (localStorage.getItem("analytics") === "true")
         void api("/usage", { tool: id }).catch(() => {});
     } catch (e) {
-      setError((e as Error).message);
+      if (current === job.current) setError((e as Error).message);
     } finally {
-      setBusy(false);
+      if (current === job.current) setBusy(false);
     }
   }
   const modes: Record<string, string[]> = {
@@ -117,6 +144,8 @@ export default function ToolPage() {
             Choose a {id === "hash" ? "file" : "JPEG, PNG or WebP image"} · Max
             25 MB
             <input
+              ref={fileInput}
+              disabled={busy}
               type="file"
               accept={
                 id === "image" ? "image/jpeg,image/png,image/webp" : undefined
@@ -143,6 +172,11 @@ export default function ToolPage() {
                 <input
                   aria-label="Date and time"
                   type="datetime-local"
+                  value={
+                    /^\d{4}-\d\d-\d\dT\d\d:\d\d(?::\d\d)?$/.test(input)
+                      ? input
+                      : ""
+                  }
                   onChange={(e) => setInput(e.target.value)}
                 />
               </label>
@@ -182,6 +216,7 @@ export default function ToolPage() {
                 </label>
                 <textarea
                   id="other"
+                  maxLength={200000}
                   value={other}
                   onChange={(e) => setOther(e.target.value)}
                 />
@@ -221,6 +256,7 @@ export default function ToolPage() {
           </>
         )}
         {busy && <p role="status">Processing locally…</p>}
+        {notice && <p role="status">{notice}</p>}
         {error && (
           <p role="alert" className="error">
             {error}
@@ -231,10 +267,11 @@ export default function ToolPage() {
           <div className="actions">
             <button
               aria-label="Copy result"
+              disabled={!hasResult || busy}
               onClick={() =>
-                void navigator.clipboard
-                  .writeText(output)
-                  .then(() => setError("Copied to clipboard."))
+                void Promise.resolve()
+                  .then(() => navigator.clipboard.writeText(output))
+                  .then(() => setNotice("Copied to clipboard."))
                   .catch(() =>
                     setError(
                       "Clipboard unavailable; select and copy the result.",
@@ -246,6 +283,7 @@ export default function ToolPage() {
             </button>
             <button
               aria-label="Download result"
+              disabled={!hasResult || busy}
               onClick={() => {
                 if (compressed) {
                   download(compressed.blob, compressed.name);
@@ -253,7 +291,9 @@ export default function ToolPage() {
                   const a = document.createElement("a");
                   a.href = image;
                   a.download = "qr-code.png";
+                  document.body.appendChild(a);
                   a.click();
+                  a.remove();
                 } else download(output, `${id}-result.txt`);
               }}
             >
@@ -262,6 +302,11 @@ export default function ToolPage() {
             <button
               aria-label="Reset"
               onClick={() => {
+                job.current++;
+                setBusy(false);
+                setHasResult(false);
+                setNotice("");
+                if (fileInput.current) fileInput.current.value = "";
                 setInput("");
                 setOther("");
                 setOutput("");

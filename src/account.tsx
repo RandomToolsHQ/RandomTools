@@ -1,4 +1,9 @@
-import { managedAuth, managedSignOut, ManagedSignIn, ManagedSecurity } from "./auth";
+import {
+  managedAuth,
+  managedSignOut,
+  ManagedSignIn,
+  ManagedSecurity,
+} from "./auth";
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -153,16 +158,26 @@ export default function Account({ page }: { page: string }) {
         </div>
       </section>
     );
-  if (me.isPending) return <p className="loading">Loading account…</p>;
+  if (me.isPending)
+    return (
+      <p className="loading" role="status">
+        Loading account…
+      </p>
+    );
   if (!me.data?.user)
     return (
       <section className="form-page">
         <h1>Your workspace awaits.</h1>
         <p>
           {me.error
-            ? "The account API is unavailable. Start the local Worker to use accounts."
+            ? "Your account could not be loaded. Please try again."
             : "Sign in to access your account."}
         </p>
+        {me.error && (
+          <button className="secondary" onClick={() => void me.refetch()}>
+            Try again
+          </button>
+        )}
         <Link className="primary" to="/login">
           Log in
         </Link>
@@ -535,12 +550,14 @@ function Admin({ action }: { action: Action }) {
             </label>
             <button className="primary">Reconcile membership</button>
           </form>
-          <button
-            className="secondary"
-            onClick={() => void action(() => api("/admin/mock-payment", {}))}
-          >
-            Create development mock event
-          </button>
+          {!managedAuth && (
+            <button
+              className="secondary"
+              onClick={() => void action(() => api("/admin/mock-payment", {}))}
+            >
+              Create development mock event
+            </button>
+          )}
         </div>
         <div className="panel">
           <h2>Tool availability</h2>

@@ -1,3 +1,4 @@
+import { decodeHTMLStrict } from "entities/decode";
 import { diffLines } from "diff";
 import { parseColour } from "./colour";
 export function randomInt(min: number, max: number) {
@@ -99,23 +100,10 @@ export function convert(
         "'": "&#39;",
       };
       if (mode !== "decode") return input.replace(/[&<>"']/g, (c) => map[c]);
-      return input.replace(
-        /&(?:amp|lt|gt|quot|apos|#39|#\d+|#x[\da-f]+);/gi,
-        (e) => {
-          const found = Object.entries(map).find(([, v]) => v === e);
-          if (found) return found[0];
-          if (e === "&apos;") return "'";
-          const n = e.startsWith("&#x")
-            ? parseInt(e.slice(3), 16)
-            : Number(e.slice(2, -1));
-          return Number.isInteger(n) && n >= 0 && n <= 0x10ffff
-            ? String.fromCodePoint(n)
-            : e;
-        },
-      );
+      return decodeHTMLStrict(input);
     }
     case "password":
-      return password(Number(input) || 20);
+      return password(input.trim() ? Number(input) : 20);
     case "counter":
       return JSON.stringify(
         {
@@ -131,15 +119,23 @@ export function convert(
       return mode === "lower"
         ? input.toLowerCase()
         : mode === "title"
-          ? input.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase())
+          ? input
+              .toLowerCase()
+              .replace(
+                /(^|[^\p{L}\p{N}’'])(\p{L})/gu,
+                (_, prefix, letter) => prefix + letter.toUpperCase(),
+              )
           : mode === "slug"
             ? input
                 .toLowerCase()
                 .normalize("NFKD")
+                .replace(/\p{M}+/gu, "")
                 .replace(/[^a-z0-9]+/g, "-")
                 .replace(/^-|-$/g, "")
             : input.toUpperCase();
     case "random":
+      if (!input.trim() || !other.trim())
+        throw Error("Enter both minimum and maximum integers.");
       return String(randomInt(Number(input), Number(other)));
     case "discord": {
       const n = Math.floor(new Date(input).getTime() / 1000);
@@ -199,6 +195,8 @@ export function download(content: Blob | string, name: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

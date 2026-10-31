@@ -26,7 +26,16 @@ export async function api<T = any>(
     body: body ? JSON.stringify(body) : undefined,
     credentials: "same-origin",
   });
-  const data = (await response.json()) as { error?: string };
+  let data: { error?: string };
+  try {
+    data = await response.json();
+  } catch {
+    throw Error(
+      response.ok
+        ? "The server returned an unreadable response. Please try again."
+        : `Service unavailable (${response.status}). Please try again.`,
+    );
+  }
   if (!response.ok) throw Error(data.error || "Request failed");
   return data as T;
 }

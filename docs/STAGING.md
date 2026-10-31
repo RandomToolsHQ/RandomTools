@@ -98,6 +98,10 @@ Ubuntu runners. No new billing arrangement or paid runner was configured.
 
 ## Remaining work for private account testing
 
+Phase 2 coverage and the exact hosted CPU acceptance procedure are tracked in
+[PHASE2.md](PHASE2.md). Provider fixtures and local tests are not evidence of real
+hosted Clerk flows or Free-plan CPU compatibility.
+
 1. Complete normal Wrangler authentication to the intended existing Cloudflare
    account. Do not use a temporary account, extract browser cookies or upgrade.
 2. Provision the existing staging Clerk backend key, a signed user.deleted

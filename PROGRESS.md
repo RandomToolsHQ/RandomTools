@@ -1,5 +1,52 @@
 # RandomTools implementation status
 
+## Phase 2 quality and SaaS testing — 31 October 2026
+
+Continued the existing repository from `5a6fbc5` on `codex/phase2-quality`.
+The public tools preview remains the only publicly deployed application scope.
+See [the Phase 2 audit](docs/PHASE2.md) for the 18-tool review, twelve-capability
+Pro matrix, security findings, provider blockers and hosted CPU acceptance steps.
+
+- Reproduced invalid password length `0` generating a default password on the
+  deployed site. Fixed explicit length validation, blank random bounds, Unicode
+  title/slug conversion and standards-based HTML entity decoding.
+- Fixed stale results/downloads after failures, async Reset races, same-file
+  reselection, date picker synchronization, clipboard status announcements and
+  result/loading guards. Added real download/corrupt-file and deferred-work tests.
+- Improved whitespace search, mobile Escape/focus and navigation relationships,
+  unreadable API response errors, account retry/loading feedback and Pro result
+  invalidation. Managed account UI omits the local mock-payment control.
+- Expanded managed-auth/real-D1 tests across every Pro storage verb, current and
+  expired entitlement, cross-user records/export, retention off, role injection,
+  every admin gate, self-disable denial, bound search and audit attribution.
+  Missing admin targets return 404 without false audit records; unknown tool IDs
+  are rejected. Backup/restore now verifies Clerk mappings and deletion guards.
+- Added stateful browser coverage for Pro save/load/delete, history, preferences,
+  TXT/JSON/CSV download contents and admin search/disable/reconcile/revoke/tools.
+  Existing tests retain Ko-fi replay/concurrency/currency/amount/quota checks.
+- All 50 unit/integration tests pass (12 files). Type checking, lint, synthetic
+  Wrangler D1 backup/restore, SEO, Pages/private-staging/public builds and API
+  dry run pass. The private build reports a >500 kB chunk warning; it is not
+  deployed publicly and needs production performance profiling.
+- Initial hosted baseline: 24 selected checks passed across desktop/mobile
+  Chromium, Firefox and mobile WebKit. Expanded public-artifact suite: all 40
+  passed. Local account/Pro/admin suite initially passed 43/48; four failures
+  were an exact-label selector in the new admin test, and one was a Firefox
+  browser-context setup crash. Corrected the selector without weakening any
+  assertions; all 12 targeted admin/text/mobile cases then passed across all
+  four projects. Latest managed-auth/D1 file also passed all 14 tests after
+  adding positive admin disable/enable and missing-target coverage.
+- Gitleaks found no secrets in all Git history, source or both build artifacts.
+  Only `.env.example` is tracked. The untracked nested `RandomTools/` checkout is
+  preserved and excluded from commits. No original six commits remain unpushed;
+  those were included in the previously published history.
+- Connected Cloudflare public-project settings still show no secrets or app
+  bindings and Fail closed. Wrangler remains unauthenticated, with no local
+  backend Clerk key. Real provider registration/login/recovery/deletion/webhook
+  and hosted authenticated Free CPU tests are blocked, not claimed complete.
+  No development authentication was exposed, password strength reduced, plan
+  purchased, paid service enabled or live payment activated.
+
 ## Free pages.dev public tools preview — 31 October 2026
 
 The current owner-approved scope is zero-cost staging on Cloudflare-managed

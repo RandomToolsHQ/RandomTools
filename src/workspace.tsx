@@ -39,6 +39,7 @@ export default function ProWorkspace({
     queryFn: () => api("/pro/preferences"),
   });
   async function run() {
+    setResult("");
     return action(async () => {
       let output: string;
       if (operation === "json") {
@@ -111,6 +112,7 @@ export default function ProWorkspace({
   }
   async function files(files: FileList | null) {
     if (!files) return;
+    setResult("");
     await action(async () => {
       if (files.length > 20) throw Error("Limit: 20 files per batch.");
       let total = 0;
@@ -246,7 +248,7 @@ export default function ProWorkspace({
             />
           </label>
         )}
-        <button className="primary" onClick={() => void run()}>
+        <button className="primary" disabled={busy} onClick={() => void run()}>
           Run transformation
         </button>
         <label>
@@ -256,11 +258,13 @@ export default function ProWorkspace({
         <button
           className="secondary"
           onClick={() => download(result, "workspace.txt")}
+          disabled={busy || !result}
         >
           Text export
         </button>
         <button
           className="secondary"
+          disabled={busy || !result}
           onClick={() =>
             download(
               JSON.stringify({ operation, result }, null, 2),
@@ -272,6 +276,7 @@ export default function ProWorkspace({
         </button>
         <button
           className="secondary"
+          disabled={busy || !result}
           onClick={() =>
             download(
               "operation,result\r\n" +
@@ -292,7 +297,7 @@ export default function ProWorkspace({
         </button>
         <button
           className="secondary"
-          disabled={result.length > 10000 || !result}
+          disabled={busy || result.length > 10000 || !result}
           onClick={() =>
             void action(() =>
               api("/pro/history", {
@@ -329,6 +334,7 @@ export default function ProWorkspace({
           Choose files
           <input
             type="file"
+            disabled={busy}
             multiple
             accept={
               fileMode === "image"

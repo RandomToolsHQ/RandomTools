@@ -713,20 +713,24 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
         .object({ id: z.string(), disabled: z.boolean() })
         .parse(await parse(req));
       if (b.id === u.id) fail(400, "Cannot disable your own account");
-      await env.DB.batch([
+      const updated = await env.DB.batch([
         env.DB.prepare("UPDATE users SET disabled=? WHERE id=?").bind(
           b.disabled ? 1 : 0,
           b.id,
         ),
         env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(b.id),
-        env.DB.prepare("INSERT INTO audit_logs VALUES(?,?,?,?,?)").bind(
+        env.DB.prepare(
+          "INSERT INTO audit_logs SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM users WHERE id=?)",
+        ).bind(
           crypto.randomUUID(),
           u.id,
           "admin.user.disable:" + b.disabled,
           b.id,
           now(),
+          b.id,
         ),
       ]);
+      if (!updated[0].meta.changes) fail(404, "Account not found");
       return json({ message: "User updated" });
     }
     if (path === "/admin/reconcile" && req.method === "POST") {
@@ -802,18 +806,22 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
           reason: z.enum(["refund", "dispute", "incorrect-link", "manual"]),
         })
         .parse(await parse(req));
-      await env.DB.batch([
+      const updated = await env.DB.batch([
         env.DB.prepare(
           "UPDATE subscriptions SET paid_through=? WHERE id=?",
         ).bind(now(), b.id),
-        env.DB.prepare("INSERT INTO audit_logs VALUES(?,?,?,?,?)").bind(
+        env.DB.prepare(
+          "INSERT INTO audit_logs SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM subscriptions WHERE id=?)",
+        ).bind(
           crypto.randomUUID(),
           u.id,
           "subscription.revoke:" + b.reason,
           b.id,
           now(),
+          b.id,
         ),
       ]);
+      if (!updated[0].meta.changes) fail(404, "Subscription not found");
       return json({ message: "Access period revoked" });
     }
     if (path === "/admin/mock-payment" && req.method === "POST") {
@@ -845,6 +853,7 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       const b = z
         .object({ tool: z.string().min(1).max(50), enabled: z.boolean() })
         .parse(await parse(req));
+      if (!tools.some((tool) => tool.id === b.tool)) fail(400, "Unknown tool");
       await env.DB.batch([
         env.DB.prepare(
           "INSERT INTO tool_availability VALUES(?,?) ON CONFLICT(tool) DO UPDATE SET enabled=excluded.enabled",
