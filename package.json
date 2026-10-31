@@ -11,10 +11,12 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:public": "playwright test --config playwright.public.config.ts",
     "db:migrate": "wrangler d1 migrations apply randomtools --config wrangler.api.toml --local",
     "format": "prettier --write src worker tests e2e functions scripts *.ts *.json *.js",
     "build:pages": "npm run build && node scripts/hosting.mjs && wrangler pages functions build --outdir dist/_worker.js",
     "build:staging": "node scripts/staging.mjs",
+    "build:public-staging": "node scripts/public-staging.mjs",
     "preview:pages": "wrangler pages dev dist --port 8790",
     "check:backup": "node scripts/check-backup.mjs"
   },

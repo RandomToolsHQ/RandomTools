@@ -13,6 +13,7 @@ crons = ["23 3 * * *"]
 APP_ORIGIN = "https://staging-origin-not-configured.invalid"
 ENVIRONMENT = "staging"
 AUTH_PROVIDER = "clerk"
+CLERK_TESTER_IDS = "[]"
 CLERK_ISSUER = "https://quiet-civet-8782.clerk.accounts.dev"
 CLERK_PUBLISHABLE_KEY = "pk_test_cXVpZXQtY2l2ZXQtODc4Mi5jbGVyay5hY2NvdW50cy5kZXYk"
 PAYMENTS_ENABLED = "false"

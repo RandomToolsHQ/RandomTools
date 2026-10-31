@@ -1,3 +1,4 @@
+import { publicToolsOnly } from "./deployment";
 import { Authentication } from "./auth";
 import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
@@ -33,7 +34,7 @@ import { tools, pricing } from "./catalog";
 import { api } from "./api";
 import "./style.css";
 const ToolPage = lazy(() => import("./ToolPage"));
-const Account = lazy(() => import("./account"));
+const Account = /* @__PURE__ */ lazy(() => import("./account"));
 function ToolRoute() {
   const { id } = useParams();
   return <ToolPage key={id} />;
@@ -163,15 +164,19 @@ function App() {
             >
               {light ? <Moon size={18} /> : <Sun size={18} />}
             </button>
-            <Link
-              className="login-link"
-              to={me.data?.user ? "/dashboard" : "/login"}
-            >
-              {me.data?.user ? "Dashboard" : "Log in"}
-            </Link>
-            <Link className="primary small" to="/register">
-              Get started <ArrowRight size={15} />
-            </Link>
+            {!publicToolsOnly && (
+              <Link
+                className="login-link"
+                to={me.data?.user ? "/dashboard" : "/login"}
+              >
+                {me.data?.user ? "Dashboard" : "Log in"}
+              </Link>
+            )}
+            {!publicToolsOnly && (
+              <Link className="primary small" to="/register">
+                Get started <ArrowRight size={15} />
+              </Link>
+            )}
             <button
               className="mobile-toggle"
               aria-label="Toggle navigation"
@@ -184,6 +189,12 @@ function App() {
         </div>
       </header>
       <main className="wrap" id="main-content" tabIndex={-1}>
+        {publicToolsOnly && (
+          <p className="privacy" role="status">
+            Public tools preview · Accounts, admin and Pro workspaces are
+            restricted to authorized testing. Payments are disabled.
+          </p>
+        )}
         <Suspense fallback={<p className="loading">Loading your workspace…</p>}>
           <Routes>
             <Route path="/" element={<Directory home />} />
@@ -202,7 +213,13 @@ function App() {
               "subscription",
               "admin",
             ].map((p) => (
-              <Route key={p} path={"/" + p} element={<Account page={p} />} />
+              <Route
+                key={p}
+                path={"/" + p}
+                element={
+                  publicToolsOnly ? <Restricted /> : <Account page={p} />
+                }
+              />
             ))}
             <Route path="/privacy" element={<Legal privacy />} />
             <Route path="/terms" element={<Legal />} />
@@ -252,16 +269,18 @@ function App() {
             Source code ↗
           </a>
         </div>
-        <button
-          className="analytics-toggle"
-          aria-pressed={analytics}
-          onClick={() => {
-            localStorage.setItem("analytics", String(!analytics));
-            setAnalytics(!analytics);
-          }}
-        >
-          Anonymous tool counts: {analytics ? "on" : "off"}
-        </button>
+        {!publicToolsOnly && (
+          <button
+            className="analytics-toggle"
+            aria-pressed={analytics}
+            onClick={() => {
+              localStorage.setItem("analytics", String(!analytics));
+              setAnalytics(!analytics);
+            }}
+          >
+            Anonymous tool counts: {analytics ? "on" : "off"}
+          </button>
+        )}
       </footer>
     </>
   );
@@ -503,7 +522,35 @@ function Directory({ home = false }: { home?: boolean }) {
     </>
   );
 }
+function Restricted() {
+  return (
+    <section className="text-page">
+      <h1>Restricted testing area</h1>
+      <p>
+        Accounts, admin and Pro workspaces are available only in controlled
+        testing. This public preview includes the 18 free browser tools.
+      </p>
+      <Link className="primary" to="/tools">
+        Explore free tools
+      </Link>
+    </section>
+  );
+}
 function Pro() {
+  if (publicToolsOnly)
+    return (
+      <section className="text-page">
+        <h1>RandomTools Pro</h1>
+        <p>
+          Batch processing, saved presets, workflows and account features are
+          under controlled testing. No subscriptions or payments are available
+          on this preview.
+        </p>
+        <Link className="primary" to="/tools">
+          Explore free tools
+        </Link>
+      </section>
+    );
   return (
     <section className="text-page">
       <div className="eyebrow">RANDOMTOOLS PRO</div>
@@ -586,14 +633,21 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
             inputs are not sent to our server. Local favourites and theme
             preferences are stored on your device.
           </p>
+          {publicToolsOnly && (
+            <p>
+              This public tools preview has no account signup, saved server
+              data, analytics collection or live payments. Clerk development
+              authentication is not loaded on this public frontend.
+            </p>
+          )}
           <h2>Accounts and storage</h2>
           <p>
-            Accounts store your email, display name, password hash and session
-            records. Pro users may explicitly save presets, workflows and
-            history. Account settings provide export, retention and deletion
-            controls. Payment notifications are retained for membership
-            reconciliation; do not submit sensitive tool content to saved
-            records.
+            Clerk manages authentication for controlled testing. D1 stores
+            application profiles and session records. Pro users may explicitly
+            save presets, workflows and history. Account settings provide
+            export, retention and deletion controls. Payment notifications are
+            retained for membership reconciliation; do not submit sensitive tool
+            content to saved records.
           </p>
           <h2>Service providers and retention</h2>
           <p>
@@ -644,9 +698,13 @@ createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={client}>
       <BrowserRouter>
-        <Authentication>
+        {publicToolsOnly ? (
           <App />
-        </Authentication>
+        ) : (
+          <Authentication>
+            <App />
+          </Authentication>
+        )}
       </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,

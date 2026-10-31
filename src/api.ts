@@ -7,6 +7,15 @@ export async function api<T = any>(
   body?: unknown,
   method?: string,
 ): Promise<T> {
+  if (publicToolsOnly) {
+    if (path === "/me" && !body && (!method || method === "GET"))
+      return { user: null, pro: false } as T;
+    if (path === "/tools" && !body && (!method || method === "GET"))
+      return { availability: [] } as T;
+    throw Error(
+      "Accounts and Pro features are restricted to authorized testing.",
+    );
+  }
   const bearer = await tokenProvider?.();
   const headers: Record<string, string> = {};
   if (body) headers["Content-Type"] = "application/json";
@@ -21,3 +30,4 @@ export async function api<T = any>(
   if (!response.ok) throw Error(data.error || "Request failed");
   return data as T;
 }
+import { publicToolsOnly } from "./deployment";

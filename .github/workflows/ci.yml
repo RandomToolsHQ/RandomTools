@@ -19,3 +19,5 @@ jobs:
       - run: npx wrangler deploy --config wrangler.api.toml --dry-run
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:e2e
+      - run: npm run build:public-staging
+      - run: npm run test:public

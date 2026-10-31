@@ -1,0 +1,4 @@
+# Public tools only. Deliberately no API, D1, secrets or service bindings.
+name = "randomtools-preview"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"

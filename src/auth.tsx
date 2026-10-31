@@ -2,7 +2,9 @@ import { ClerkProvider, SignIn, SignUp, useAuth, useClerk } from "@clerk/react";
 import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { setTokenProvider } from "./api";
-export const managedAuth = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+import { publicToolsOnly } from "./deployment";
+export const managedAuth =
+  !publicToolsOnly && !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 let signOutProvider: (() => Promise<void>) | null = null;
 export async function managedSignOut() {
   await signOutProvider?.();

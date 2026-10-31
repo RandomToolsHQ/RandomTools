@@ -12,6 +12,7 @@ export interface ClerkEnvironment {
   CLERK_ISSUER?: string;
   CLERK_JWT_KEY?: string;
   CLERK_WEBHOOK_SIGNING_SECRET?: string;
+  CLERK_TESTER_IDS?: string;
 }
 export class AuthError extends Error {
   constructor(
@@ -76,6 +77,21 @@ export async function managedCurrent(
     auth.sessionClaims?.azp !== env.APP_ORIGIN
   )
     throw new AuthError(401, "Invalid account identity");
+  if (env.ENVIRONMENT === "staging") {
+    let testers: unknown;
+    try {
+      testers = JSON.parse(env.CLERK_TESTER_IDS || "[]");
+    } catch {
+      throw new AuthError(503, "Staging tester configuration is invalid");
+    }
+    if (!Array.isArray(testers) || testers.some((id) => typeof id !== "string"))
+      throw new AuthError(503, "Staging tester configuration is invalid");
+    if (!testers.includes(auth.userId))
+      throw new AuthError(
+        403,
+        "This account is not authorized for controlled testing",
+      );
+  }
   const session = await client.sessions.getSession(auth.sessionId);
   if (
     session.status !== "active" ||

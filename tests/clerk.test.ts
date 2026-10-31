@@ -65,6 +65,7 @@ beforeEach(() => {
     APP_ORIGIN: origin,
     ENVIRONMENT: "staging",
     AUTH_PROVIDER: "clerk",
+    CLERK_TESTER_IDS: JSON.stringify([subject]),
     CLERK_ISSUER: issuer,
     CLERK_SECRET_KEY: "sk_test_fixture_not_a_credential",
     CLERK_PUBLISHABLE_KEY: "pk_test_fixture",
@@ -99,6 +100,19 @@ beforeEach(() => {
   });
 });
 describe("managed Clerk identity with real isolated D1", () => {
+  it("denies staging testers not explicitly allowlisted before data provisioning", async () => {
+    await expect(
+      managedCurrent(req(), { ...env, CLERK_TESTER_IDS: "[]" }),
+    ).rejects.toThrow("not authorized");
+    expect(mock.getSession).not.toHaveBeenCalled();
+    expect(mock.getUser).not.toHaveBeenCalled();
+    expect(
+      await db
+        .prepare("SELECT user_id FROM auth_identities WHERE subject=?")
+        .bind(subject)
+        .first(),
+    ).toBeNull();
+  });
   it("maps immutable identities idempotently and retains internal roles/entitlements", async () => {
     const first = (await managedCurrent(req(), env))!;
     expect(first.role).toBe("free");
