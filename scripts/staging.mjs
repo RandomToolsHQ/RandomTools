@@ -24,13 +24,14 @@ execFileSync(
 // Keep the artifact under the staging configuration: Wrangler discovers the
 // Pages config within the staging project boundary.
 const artifact = resolve("staging/dist");
-if (dirname(artifact) !== resolve("staging")) throw Error("Unexpected staging artifact path");
+if (dirname(artifact) !== resolve("staging"))
+  throw Error("Unexpected staging artifact path");
 await rm(artifact, { recursive: true, force: true });
 await mkdir("staging/dist", { recursive: true });
 await cp("dist", "staging/dist", { recursive: true, force: true });
 const headers = await readFile("dist/_headers", "utf8");
 await writeFile(
   "staging/dist/_headers",
-  `${headers}\n/*\n  X-Robots-Tag: noindex, nofollow\n`,
+  `${headers.trimEnd()}\n  X-Robots-Tag: noindex, nofollow\n`,
 );
 console.log("Staging artifact prepared in staging/dist with noindex headers.");

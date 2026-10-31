@@ -1,4 +1,20 @@
 import { test, expect } from "@playwright/test";
+test("public static pages preserve security and staging indexing headers", async ({
+  request,
+}) => {
+  const response = await request.get("/tools/json");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-security-policy"]).toContain(
+    "default-src 'self'",
+  );
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+  expect(response.headers()["referrer-policy"]).toBe("no-referrer");
+  expect(response.headers()["x-robots-tag"]).toContain("noindex");
+  expect(response.headers()["strict-transport-security"]).toContain(
+    "max-age=31536000",
+  );
+});
 test("public frontend exposes no development authentication or account workspace", async ({
   page,
 }) => {

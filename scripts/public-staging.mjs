@@ -36,7 +36,7 @@ await writeFile(
 );
 await writeFile(
   target + "/_headers",
-  (await readFile("public/_headers", "utf8")) +
-    "\n/*\n  X-Robots-Tag: noindex, nofollow\n  Strict-Transport-Security: max-age=31536000\n",
+  (await readFile("public/_headers", "utf8")).trimEnd() +
+    "\n  X-Robots-Tag: noindex, nofollow\n  Strict-Transport-Security: max-age=31536000\n",
 );
 await writeFile(target + "/robots.txt", "User-agent: *\nDisallow: /\n");
