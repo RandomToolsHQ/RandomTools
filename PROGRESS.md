@@ -23,6 +23,9 @@ This entry supersedes earlier plans to require a domain or publish full accounts
   real host. The first upload exposed a duplicate-header-rule issue; combined
   it into one rule, redeployed and reran hosted tests successfully. Local Pages
   previews need restart after artifact replacement to reload header configuration.
+- The Cloudflare dashboard confirms no public-project secrets or application
+  bindings. Configured Pages Functions to **fail closed** on free-tier exhaustion;
+  static public assets remain outside the API execution routes.
 - Deployed public code corresponds to `3f57beb` (the header correction after
   `d905593`). Uploaded archive SHA256:
   `8f1e6506f5b0bd235dcede65a1bb72e871093a21cefe0722adfecfd0ab630e90`.
@@ -60,6 +63,7 @@ This entry supersedes earlier plans to require a domain or publish full accounts
 | API Worker | Dry-run passed; no claim of hosted account CPU validation |
 | Dependency audit | 0 runtime vulnerabilities |
 | Secret audit | Gitleaks 8.30.1 (official archive/checksum verified) scanned history, staged patches and generated artifacts; no real secrets found |
+| GitHub CI | [Run 41193014120](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41193014120) succeeded on `aa13bd1`, including all 44 unit/integration tests, both full browser suites, builds, backup and dry-run checks |
 
 An exact public Clerk publishable-key allowlist was added to Gitleaks after
 reviewing that false positive. It does not allow backend secret keys. Environment
@@ -68,6 +72,11 @@ files, Wrangler state, archives, generated builds and the nested untracked
 `codex/clerk-free-staging`, retaining the original six local commits without
 rewriting history. CI validates both local and public artifacts; it does not
 automatically publish the authenticated application.
+
+Verified fast-forward publication of the original six commits and subsequent
+validated work to both GitHub `main` and `codex/clerk-free-staging` at `aa13bd1`.
+The final evidence-only documentation update follows that CI-verified source
+revision and does not change the deployed artifact or application code.
 
 ### Remaining controlled-test/production work
 

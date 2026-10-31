@@ -26,6 +26,8 @@ Security boundary:
 - Private routes display a restricted-testing notice instead of account forms.
 - Hosted CSP, frame denial, nosniff, no-referrer, HSTS and noindex are verified.
   robots.txt disallows crawling. Noindex is not the account security boundary.
+- Pages Functions are configured to fail closed if the free allowance is
+  exhausted. The dashboard confirms no application bindings or secrets.
 
 ## Controlled authentication testing
 
@@ -128,3 +130,8 @@ production account service. Ko-fi remains disabled until separately authorized.
 
 No domain, plan, service, trial, payment method or billing obligation was purchased
 or activated for this staging deployment.
+
+Validated source is published to GitHub main and codex/clerk-free-staging.
+[GitHub CI run 41193014120](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41193014120)
+passed the full source checks and both browser suites. The live public build also
+passed all 36 checks against the real HTTPS hostname.
