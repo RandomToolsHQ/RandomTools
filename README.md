@@ -4,6 +4,8 @@
 All 18 free tools are available; accounts, admin and Pro workspaces are restricted
 to controlled testing. No purchased domain or live payments are required. See
 [the current staging guide](docs/STAGING.md) for the exact deployment boundary.
+The [Phase 2 audit](docs/PHASE2.md) records tool fixes, the twelve Pro capabilities,
+security coverage and remaining controlled-authentication/CPU testing gates.
 
 Hosted authentication is being migrated to Clerk Hobby. Read
 [CLERK.md](docs/CLERK.md) and [PROGRESS.md](PROGRESS.md) before deployment;

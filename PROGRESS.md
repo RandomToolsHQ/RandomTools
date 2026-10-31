@@ -4,6 +4,7 @@
 
 Continued the existing repository from `5a6fbc5` on `codex/phase2-quality`.
 The public tools preview remains the only publicly deployed application scope.
+This entry supersedes the earlier deployment and CI identifiers below.
 See [the Phase 2 audit](docs/PHASE2.md) for the 18-tool review, twelve-capability
 Pro matrix, security findings, provider blockers and hosted CPU acceptance steps.
 
@@ -46,6 +47,38 @@ Pro matrix, security findings, provider blockers and hosted CPU acceptance steps
   and hosted authenticated Free CPU tests are blocked, not claimed complete.
   No development authentication was exposed, password strength reduced, plan
   purchased, paid service enabled or live payment activated.
+
+### Phase 2 hosted deployment
+
+- Validated application source: `4cff6cc78aaba094a83fdd2137ab8ed29507b085`,
+  pushed to `main` and `codex/phase2-quality` without force.
+- Cloudflare deployment: `d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34`.
+  Stable URL remains https://randomtools-preview.pages.dev/; immutable URL is
+  https://d1c4fd47.randomtools-preview.pages.dev/.
+- Uploaded only `public-staging/dist`, packaged with SHA-256
+  `e14603854feeb3699e4d27046f4ee0b6d5f3604307bab6643653718996c951b7`.
+  Both deployed homepages match the local artifact byte for byte, set no auth
+  cookie, retain security/noindex headers and deny API access with 403.
+- **All 40 hosted public browser checks passed** on the updated stable hostname
+  across desktop/mobile Chromium, Firefox and mobile WebKit. This includes all
+  18 tools, real text/QR downloads, corrupt-image handling, mobile/keyboard flows,
+  automated dark/light accessibility and denial of account/admin/Pro/payment APIs.
+- Connected-browser checks confirm password length `0` now gives an error with
+  no downloadable result, and a pathological regex is stopped at the one-second
+  worker limit while the page remains responsive. Clerk still shows Hobby and
+  invite-only; Cloudflare still shows empty secrets/bindings and Fail closed.
+- Screenshots are saved outside Git under the session's `randomtools-proof`
+  directory, including deployment success, live preview, password validation,
+  regex timeout and public isolation settings.
+- **Full GitHub CI passed** on application commit `4cff6cc`: main
+  [run 41195878140](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41195878140)
+  and branch
+  [run 41195878184](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41195878184).
+  This includes 50 unit/integration tests, all 48 account/Pro/admin browser cases,
+  all 40 public-artifact browser cases, type/lint checks, backup/restore, builds,
+  SEO and the Worker dry run. The earlier local selector/setup failures did not
+  recur in the clean full CI run. The final follow-up commit changes documentation
+  only; the deployed application source remains `4cff6cc`.
 
 ## Free pages.dev public tools preview — 31 October 2026
 

@@ -11,6 +11,11 @@ Cloudflare Pages project: `randomtools-preview` (Direct Upload, Free account).
 This is a tools-only staging site, even though Cloudflare labels its stable
 Direct Upload environment "Production". It is not a public account service.
 
+Current application source: `4cff6cc78aaba094a83fdd2137ab8ed29507b085`.
+Deployment: `d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34`; immutable preview:
+https://d1c4fd47.randomtools-preview.pages.dev/. All 40 hosted public browser
+checks passed after this update. PROGRESS.md records the artifact hash and evidence.
+
 Safe to test: all 18 browser tools, directory/search, local favourites, downloads,
 image compression, hashing, dark/light themes, mobile layouts and informational
 pages. Tool inputs remain in the browser. No public accounts, server saves,
@@ -135,7 +140,8 @@ production account service. Ko-fi remains disabled until separately authorized.
 No domain, plan, service, trial, payment method or billing obligation was purchased
 or activated for this staging deployment.
 
-Validated source is published to GitHub main and codex/clerk-free-staging.
-[GitHub CI run 41193014120](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41193014120)
-passed the full source checks and both browser suites. The live public build also
-passed all 36 checks against the real HTTPS hostname.
+Validated source is published to GitHub main and codex/phase2-quality.
+[Phase 2 CI run 41195878140](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41195878140)
+passed the full source checks, 50 unit/integration tests, 48 account/Pro/admin
+browser cases and 40 public-artifact browser cases. The live public build also
+passed all 40 checks against the real HTTPS hostname.
