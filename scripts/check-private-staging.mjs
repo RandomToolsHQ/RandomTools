@@ -74,6 +74,9 @@ if (process.env.PRIVATE_GATE_CREDENTIAL_FILE) {
       !!response.headers
         .get("content-security-policy")
         ?.includes("quiet-civet-8782.clerk.accounts.dev") &&
+        !!response.headers
+          .get("content-security-policy")
+          ?.includes("https://*.protect.clerk.com:*") &&
         response.headers.get("cache-control") === "private, no-store",
       response.status,
     );

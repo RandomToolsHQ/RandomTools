@@ -58,6 +58,15 @@
   gateway/unauthenticated/webhook traffic, not a representative authenticated
   Free-plan benchmark. The high tail needs investigation; actual hosted account,
   Pro/admin and authenticated CPU tests still depend on human registration.
+- Pushed the validated gateway baseline as cf541bb to main and the Phase 3 branch;
+  main CI 41280783103 passed. Investigation found Clerk Protect policy blocking
+  invitation signup because the generated CSP lacked the documented Protect
+  script/frame/connect hosts (including non-default connect ports). Added only
+  those provider domains, kept all Protect checks enabled and verified the same
+  invitation reaches remaining registration fields. Private deployment c419710b
+  passes all 28 boundary checks. Added a real build-script CSP regression test;
+  all 60 unit/integration tests now pass, along with typecheck and lint. Google
+  OAuth from the valid invitation is being tested; no password/code was entered.
 
 ## Phase 2 quality and SaaS testing — 31 October 2026
 

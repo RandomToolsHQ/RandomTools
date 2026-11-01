@@ -44,7 +44,7 @@ missing configuration denies all testers. Never grant admin/Pro access by email.
 
 Private origin: https://randomtools-web-staging.pages.dev/__staging
 
-The separate private Pages frontend is deployed (`d1a1c05c`), protected by the
+The separate private Pages frontend is deployed (`c419710b`), protected by the
 owner-approved zero-billing gateway. The API `randomtools-api-staging` is deployed
 as version `1e901dc2-ea9e-4ceb-ad9d-50574fb19322`. Both workers.dev and version
 preview URLs are disabled; the frontend uses a service binding. Do not upload
@@ -149,7 +149,7 @@ npx.cmd wrangler deploy --config wrangler.staging.toml
 npx.cmd wrangler pages deploy dist --cwd staging --project-name randomtools-web-staging --branch main
 npx.cmd playwright test --config playwright.private.config.ts
 $env:PRIVATE_GATE_CREDENTIAL_FILE = '.wrangler/staging-gate-credentials.json'
-$env:PRIVATE_IMMUTABLE_URL = 'https://d1a1c05c.randomtools-web-staging.pages.dev'
+$env:PRIVATE_IMMUTABLE_URL = 'https://c419710b.randomtools-web-staging.pages.dev'
 node scripts/check-private-staging.mjs
 ```
 
@@ -176,9 +176,14 @@ hosted Clerk flows or Free-plan CPU compatibility.
    Generic signup correctly remains restricted. Opening the invitation reached
    Clerk's security-block screen (reference 1IKFLzKM) in the in-app browser. The
    owner must complete password, verification and security prompts. Chrome was
-   reconnected successfully in the approved profile. The same invitation also
-   reached a Clerk block in normal Chrome (reference RdRPqwiA). The owner was
-   handed that tab for a manual attempt. No security protection was bypassed.
+   reconnected successfully in the approved profile and showed RdRPqwiA. Logs
+   identified protect.sign_up.blocked with reason policy, after invitation/email
+   acceptance. Require Device Intelligence checks is enabled. The CSP omitted
+   Clerk's required Protect hosts; adding script/frame https://*.protect.clerk.com
+   and connect https://*.protect.clerk.com:* resolved the block and exposed the
+   remaining registration fields. No protection was disabled or Testing Token
+   used. Supported Google OAuth registration from that valid invitation is being
+   tested. A generic Google sign-in correctly denied uninvited signup.
 2. Verify the registered account's mailbox and immutable Clerk subject; configure
    CLERK_TESTER_IDS as a JSON array through secure Worker configuration. Unset
    remains deny-all. Do not publish actual tester identifiers in Git.

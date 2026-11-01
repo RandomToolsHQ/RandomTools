@@ -17,11 +17,11 @@ if (key) {
   headers = headers
     .replace(
       "script-src 'self';",
-      `script-src 'self' https://${host} https://challenges.cloudflare.com;`,
+      `script-src 'self' https://${host} https://challenges.cloudflare.com https://*.protect.clerk.com;`,
     )
     .replace(
       "connect-src 'self';",
-      `connect-src 'self' https://${host} https://clerk-telemetry.com;`,
+      `connect-src 'self' https://${host} https://clerk-telemetry.com https://*.protect.clerk.com:*;`,
     )
     .replace(
       "img-src 'self' data: blob:;",
@@ -29,7 +29,7 @@ if (key) {
     )
     .replace(
       "object-src 'none';",
-      "frame-src https://challenges.cloudflare.com; object-src 'none';",
+      "frame-src https://challenges.cloudflare.com https://*.protect.clerk.com; object-src 'none';",
     );
   await writeFile("dist/_headers", headers);
 }
