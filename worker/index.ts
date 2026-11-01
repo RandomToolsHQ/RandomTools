@@ -8,6 +8,11 @@ import {
   type ManagedUser,
 } from "./clerk";
 import { z } from "zod";
+import {
+  AccessError,
+  requireStagingAccess,
+  type AccessEnvironment,
+} from "./access";
 import { tools, pricing } from "../src/catalog";
 import { deliverEmail, emailMode, type EmailEnvironment } from "./email";
 import { readBody, BodyTooLarge } from "./body";
@@ -19,7 +24,7 @@ import {
   token,
   verifyPassword,
 } from "./security";
-interface Env extends EmailEnvironment, ClerkEnvironment {
+interface Env extends EmailEnvironment, ClerkEnvironment, AccessEnvironment {
   DB: D1Database;
   APP_ORIGIN: string;
   ENVIRONMENT: string;
@@ -81,8 +86,9 @@ async function rate(env: Env, key: string, limit = 10) {
   if ((r?.count || 0) > limit)
     fail(429, "Too many attempts. Please try again in 15 minutes.");
 }
-async function current(req: Request, env: Env) {
-  if (env.AUTH_PROVIDER === "clerk") return managedCurrent(req, env);
+async function current(req: Request, env: Env, accessEmail?: string) {
+  if (env.AUTH_PROVIDER === "clerk")
+    return managedCurrent(req, env, accessEmail);
   const cookie = req.headers
     .get("cookie")
     ?.match(/(?:^|;\s*)rt_session=([a-f0-9]{64})(?:;|$)/)?.[1];
@@ -206,6 +212,10 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     await readBody(req.clone(), 65536);
     return managedWebhook(req, env);
   }
+  const accessEmail =
+    env.ENVIRONMENT === "staging"
+      ? await requireStagingAccess(req, env)
+      : undefined;
   if (path === "/webhooks/kofi" && req.method === "POST")
     return webhook(req, env);
   if (!["GET", "HEAD"].includes(req.method)) {
@@ -234,7 +244,7 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       `auth:${digest((env.RATE_LIMIT_SECRET || "development") + ip)}`,
       25,
     );
-  const user = await current(req, env);
+  const user = await current(req, env, accessEmail);
   if (path === "/usage" && req.method === "POST") {
     const b = z
       .object({ tool: z.string() })
@@ -909,7 +919,9 @@ export default {
       response =
         e instanceof BodyTooLarge
           ? json({ error: "Request too large" }, 413)
-          : e instanceof HttpError || e instanceof AuthError
+          : e instanceof HttpError ||
+              e instanceof AuthError ||
+              e instanceof AccessError
             ? json({ error: e.message }, e.status)
             : e instanceof z.ZodError || e instanceof SyntaxError
               ? json({ error: "Invalid input" }, 400)

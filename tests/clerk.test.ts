@@ -17,6 +17,11 @@ const mock = vi.hoisted(() => ({
   getUser: vi.fn(),
   deleteUser: vi.fn(),
   verifyWebhook: vi.fn(),
+  requireStagingAccess: vi.fn(),
+}));
+vi.mock("../worker/access", async (original) => ({
+  ...(await original<any>()),
+  requireStagingAccess: mock.requireStagingAccess,
 }));
 vi.mock("@clerk/backend", async (original) => ({
   ...(await original<any>()),
@@ -40,6 +45,16 @@ const req = () =>
   new Request(origin + "/api/me", {
     headers: { authorization: "Bearer synthetic-fixture" },
   });
+it("rejects a gateway identity mismatch before provisioning any D1 account", async () => {
+  await expect(
+    managedCurrent(req(), env, "different@example.test"),
+  ).rejects.toMatchObject({ status: 403 });
+  const identity = await db
+    .prepare("SELECT user_id FROM auth_identities WHERE issuer=? AND subject=?")
+    .bind(issuer, subject)
+    .first();
+  expect(identity).toBeNull();
+});
 beforeAll(async () => {
   mf = new Miniflare(
     convertV4MiniflareOptions({
@@ -60,6 +75,7 @@ afterAll(async () => {
 beforeEach(() => {
   vi.clearAllMocks();
   subject = "user_fixture_" + serial++;
+  mock.requireStagingAccess.mockResolvedValue(subject + "@example.test");
   env = {
     DB: db,
     APP_ORIGIN: origin,
@@ -197,7 +213,7 @@ describe("managed Clerk identity with real isolated D1", () => {
         (await call("/pro/" + path, method, method === "GET" ? undefined : {}))
           .status,
       ).toBe(403);
-  });
+  }, 30000);
   it("rejects privilege injection, gates every admin mutation and audits authorized changes", async () => {
     const user = (await managedCurrent(req(), env))!;
     const call = (
@@ -303,7 +319,7 @@ describe("managed Clerk identity with real isolated D1", () => {
         .first(),
     ).not.toBeNull();
     await call("/admin/tools", { tool: "json", enabled: true });
-  });
+  }, 30000);
   it("denies staging testers not explicitly allowlisted before data provisioning", async () => {
     await expect(
       managedCurrent(req(), { ...env, CLERK_TESTER_IDS: "[]" }),

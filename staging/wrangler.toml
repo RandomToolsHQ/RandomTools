@@ -3,12 +3,29 @@ name = "randomtools-web-staging"
 pages_build_output_dir = "./dist"
 compatibility_date = "2026-10-01"
 
+[vars]
+STAGING_GATE_ORIGIN = "https://randomtools-web-staging.pages.dev"
+# Hosted denial checks and signed Clerk deletion delivery were verified first.
+STAGING_CONTENT_ENABLED = "true"
+
+[[d1_databases]]
+binding = "GATE_DB"
+database_name = "randomtools-staging"
+database_id = "24d38e43-b765-4d21-b713-fce893d7317d"
+
 [[services]]
 binding = "API"
 service = "randomtools-api-staging"
 
 # Explicitly override the preview binding so it cannot inherit production API.
 [env.preview]
+[env.preview.vars]
+STAGING_GATE_ORIGIN = "https://randomtools-web-staging.pages.dev"
+STAGING_CONTENT_ENABLED = "false"
+[[env.preview.d1_databases]]
+binding = "GATE_DB"
+database_name = "randomtools-staging"
+database_id = "24d38e43-b765-4d21-b713-fce893d7317d"
 [[env.preview.services]]
 binding = "API"
 service = "randomtools-api-staging"

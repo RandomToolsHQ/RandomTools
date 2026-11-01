@@ -28,6 +28,7 @@
     "diff": "latest",
     "entities": "^8.1.0",
     "fflate": "^0.8.3",
+    "jose": "^6.2.14",
     "lucide-react": "latest",
     "motion": "latest",
     "qrcode": "latest",

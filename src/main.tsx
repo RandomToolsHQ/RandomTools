@@ -202,6 +202,13 @@ function App() {
         </div>
       </header>
       <main className="wrap" id="main-content" tabIndex={-1}>
+        {import.meta.env.VITE_DEPLOYMENT_STAGE === "staging" &&
+          !publicToolsOnly && (
+            <form action="/__staging/logout" method="post" className="privacy">
+              <span>Private development testing · Payments disabled.</span>
+              <button type="submit">Exit testing gateway</button>
+            </form>
+          )}
         {publicToolsOnly && (
           <p className="privacy" role="status">
             Public tools preview · Accounts, admin and Pro workspaces are

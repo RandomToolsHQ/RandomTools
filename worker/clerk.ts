@@ -58,6 +58,7 @@ export function clerkClient(env: ClerkEnvironment) {
 export async function managedCurrent(
   req: Request,
   env: ClerkEnvironment,
+  accessEmail?: string,
 ): Promise<ManagedUser | null> {
   const client = clerkClient(env);
   // Only explicit short-lived bearer tokens from Clerk's in-memory frontend SDK.
@@ -110,6 +111,8 @@ export async function managedCurrent(
     email.verification?.status !== "verified"
   )
     throw new AuthError(403, "Verify your account before continuing");
+  if (accessEmail && email.emailAddress.trim().toLowerCase() !== accessEmail)
+    throw new AuthError(403, "Sign in with the authorized staging identity");
   const identity = await env.DB.prepare(
     "SELECT user_id,state FROM auth_identities WHERE issuer=? AND subject=?",
   )

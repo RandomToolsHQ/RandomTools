@@ -1,6 +1,6 @@
 # Cloudflare staging — current deployment
 
-Updated 31 October 2026. The owner explicitly chose zero spending and free
+Updated 1 November 2026. The owner explicitly chose zero spending and free
 Cloudflare-managed addresses. No purchased domain is needed for this preview.
 
 ## Working public preview
@@ -42,21 +42,57 @@ passkey, MFA or other paid feature was activated. The API independently requires
 an explicitly approved Clerk subject ID in `CLERK_TESTER_IDS` in staging mode;
 missing configuration denies all testers. Never grant admin/Pro access by email.
 
-The standalone application API is not publicly deployed. The authenticated
-`staging/` frontend artifact is not the public artifact. Do not upload it to the
-public tools project, and do not bind the public project to the application API.
+Private origin: https://randomtools-web-staging.pages.dev/__staging
 
-`wrangler.staging.toml` is the private testing Worker configuration. It uses
-AUTH_PROVIDER=clerk and ENVIRONMENT=staging, preserves hosted origin/header
-checks, disables workers.dev and version-preview URLs, has no Paid CPU override,
-and leaves payments off. APP_ORIGIN is intentionally unresolved until a separate
-controlled-testing origin and access policy are verified.
+The separate private Pages frontend is deployed (`d1a1c05c`), protected by the
+owner-approved zero-billing gateway. The API `randomtools-api-staging` is deployed
+as version `1e901dc2-ea9e-4ceb-ad9d-50574fb19322`. Both workers.dev and version
+preview URLs are disabled; the frontend uses a service binding. Do not upload
+`staging/dist` to the public tools project or give the public project API bindings.
+
+`wrangler.staging.toml` uses AUTH_PROVIDER=clerk, ENVIRONMENT=staging and exact
+APP_ORIGIN=https://randomtools-web-staging.pages.dev. Payments remain disabled.
+Wrangler OAuth is complete and stored encrypted with Windows Credential Manager.
+The replacement development backend key is Git-ignored and validated (HTTP 200).
+Worker secrets include CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET,
+CLERK_TESTER_IDS, RATE_LIMIT_SECRET and the two gateway secrets. Tester subjects
+currently remain deny-all (`[]`) until real registration is verified.
+
+Cloudflare Access onboarding required billing authorization and was not activated.
+The approved alternative does not replace Clerk authentication:
+
+- Named random 256-bit gateway keys; only SHA-256 fingerprints are configured
+  remotely. Grants are limited to approved mailboxes and expire after seven days.
+  This is not human-password hashing; legacy password strength is unchanged.
+- Signed 30-minute `__Host-rt_staging` Secure/HttpOnly cookies with SameSite=Lax,
+  exact issuer/audience/hostname and a current, unexpired tester fingerprint.
+  Removal or key rotation revokes existing gateway sessions.
+- All private assets, pages and API paths pass through the Pages Worker. The API
+  independently checks the gateway, Clerk token/session, subject allowlist and
+  verified mailbox match before creating a D1 identity. A gateway cookie alone
+  grants no user, Pro entitlement or admin role.
+- Exact-Origin form writes, bounded bodies, atomic D1 throttling (10 attempts per
+  IP per 15 minutes), private/no-store responses and generated application CSP.
+  Referrer-Policy=same-origin preserves native POST Origin and suppresses external
+  referrers. The credential form loads no Clerk SDK or private account assets.
+- Both Pages environments have fail_open=false, verified through the API before
+  uploading account assets. Preview content stays disabled. Alternate/immutable
+  deployment hostnames are denied even with a valid gateway cookie.
+
+The deletion-only Clerk webhook is at
+https://randomtools-web-staging.pages.dev/api/webhooks/clerk. This exact POST is
+the sole machine ingress exempt from the outer gate; signed verification and
+bounded bodies remain mandatory in the API. A provider-signed example for a
+nonexistent fixture user returned 200; unsigned delivery returned 401. No real
+account was deleted. Ko-fi processing is disabled and no payment secret is set.
 
 Staging D1 `randomtools-staging` exists with ID
 `24d38e43-b765-4d21-b713-fce893d7317d`. All three migrations were executed through
 the connected dashboard against the new empty database, then tables and the
 Wrangler-compatible d1_migrations ledger were checked. The database has no binding
-to the public site. No existing user data or resources were deleted.
+to the public site. The private API uses DB; the gateway uses GATE_DB for hashed
+IP throttle counters. Pre-auth checks found zero users, identities or subscriptions.
+No existing user data or resources were deleted.
 
 See [CLERK.md](CLERK.md) for identity mapping, existing entitlement preservation,
 revocation, signed deletion synchronization and the ownership-review procedure.
@@ -101,30 +137,68 @@ service. Normal source CI validates local and public artifacts; it does not
 publish them automatically. The repository is public and CI uses standard hosted
 Ubuntu runners. No new billing arrangement or paid runner was configured.
 
+## Private deployment and verification
+
+The private build requires a `pk_test_` publishable key in ignored `.env.staging`
+or VITE_CLERK_PUBLISHABLE_KEY. It builds `staging/guard.ts` as an advanced Worker
+and all-routes `_routes.json` with no exclusions. CI validates but never deploys it.
+
+```powershell
+npm.cmd run build:staging
+npx.cmd wrangler deploy --config wrangler.staging.toml
+npx.cmd wrangler pages deploy dist --cwd staging --project-name randomtools-web-staging --branch main
+npx.cmd playwright test --config playwright.private.config.ts
+$env:PRIVATE_GATE_CREDENTIAL_FILE = '.wrangler/staging-gate-credentials.json'
+$env:PRIVATE_IMMUTABLE_URL = 'https://d1a1c05c.randomtools-web-staging.pages.dev'
+node scripts/check-private-staging.mjs
+```
+
+The smoke script logs statuses only, never response bodies, keys or cookies.
+The ignored owner handoff `.wrangler/staging-access.txt` contains the local gateway
+credential; open it locally, never paste or upload it. Recheck fail_open=false,
+API public URL settings, anonymous/immutable denial and payments after deployments.
+Emergency closure: set STAGING_CONTENT_ENABLED=false and redeploy private Pages,
+remove/rotate gateway grants, or set CLERK_TESTER_IDS=[] to revoke all account
+subjects. These changes do not affect the public preview. Never silently extend
+grants or leave temporary Pro/admin fixture privileges active after testing.
+
+28 hosted private HTTP checks passed, covering denial, named login, asset CSP,
+Clerk-required Pro/admin, disabled payments, unsigned webhook rejection, immutable
+host denial and logout/CSRF behavior. Native browser gateway login also passed.
+
 ## Remaining work for private account testing
 
 Phase 2 coverage and the exact hosted CPU acceptance procedure are tracked in
 [PHASE2.md](PHASE2.md). Provider fixtures and local tests are not evidence of real
 hosted Clerk flows or Free-plan CPU compatibility.
 
-1. Complete normal Wrangler authentication to the intended existing Cloudflare
-   account. Do not use a temporary account, extract browser cookies or upgrade.
-2. Provision the existing staging Clerk backend key, a signed user.deleted
-   webhook secret and a random 32+ character RATE_LIMIT_SECRET in Worker secret
-   storage. Never put backend keys in VITE variables or source control.
-3. Approve/invite specific testers, verify their Clerk IDs and configure
+1. A seven-day invitation was sent to the approved tester and found in Gmail Spam.
+   Generic signup correctly remains restricted. Opening the invitation reached
+   Clerk's security-block screen (reference 1IKFLzKM) in the in-app browser. The
+   owner must complete password, verification and security prompts. Chrome was
+   reconnected successfully in the approved profile. The same invitation also
+   reached a Clerk block in normal Chrome (reference RdRPqwiA). The owner was
+   handed that tab for a manual attempt. No security protection was bypassed.
+2. Verify the registered account's mailbox and immutable Clerk subject; configure
    CLERK_TESTER_IDS as a JSON array through secure Worker configuration. Unset
    remains deny-all. Do not publish actual tester identifiers in Git.
-4. Use a separate controlled-testing Pages origin on pages.dev, with access
-   restrictions verified before exposing account UI; set APP_ORIGIN exactly.
-   Keep the API's public routes disabled and use a service binding only from
-   the controlled frontend. The public preview remains unbound.
-5. Configure and verify the signed deletion webhook, account signup/verification,
+3. Verify real account signup/verification,
    recovery, Google/GitHub login, logout/revocation, export and deletion using
-   authorized test accounts. These provider end-to-end checks are not yet done.
-6. Measure actual hosted Worker CPU for cold/warm requests, concurrency, exports
+   authorized test accounts. Signed delivery is verified; real account deletion
+   and provider end-to-end checks are not yet done. A second explicitly approved
+   identity is needed for real hosted cross-user isolation. Test free-member Pro
+   denial before temporary admin promotion (admin intentionally bypasses Pro).
+4. Measure actual hosted Worker CPU for cold/warm requests, concurrency, exports
    and cleanup. Local/hosted public-tool checks do not establish the managed
    account API's 10 ms compatibility. Do not lower the legacy password work factor.
+
+First GraphQL observation: 17 API invocations, CPU p50 3,098 microseconds (3.098 ms),
+p99 24,102 microseconds (24.102 ms), zero recorded errors. This aggregates gateway/
+unauthenticated and webhook checks across deployed versions. It is not a real
+authenticated benchmark or a Free-plan pass; investigate the high tail. Worker
+startup time and response latency are not request CPU measurements. Use the
+[official Workers metrics query](https://developers.cloudflare.com/analytics/graphql-api/tutorials/querying-workers-metrics/)
+and check [current runtime limits](https://developers.cloudflare.com/workers/platform/limits/).
 
 ## Future full production
 

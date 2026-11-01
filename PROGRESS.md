@@ -1,5 +1,64 @@
 # RandomTools implementation status
 
+## Phase 3 private staging — 1 November 2026 (in progress)
+
+- Resumed the existing work on `codex/phase3-private-staging`; the public preview
+  remains unchanged at the Phase 2 deployment. Yesterday's Phase 3 edits were
+  uncommitted and no application API Worker had been deployed.
+- Wrangler OAuth was completed with explicit owner confirmation and restricted
+  account/Workers/D1/Pages/logging scopes. Credentials are encrypted using Windows
+  Credential Manager. No additional scopes or billing permissions were requested.
+- The owner supplied a replacement Clerk development backend key in ignored
+  `.dev.vars.staging`. File/key presence, development format, Git exclusion and
+  HTTP 200 provider acceptance were verified without printing the value. Its exact
+  value is absent from tracked files. No approved tester account exists yet.
+- Cloudflare Access Free onboarding required payment details and authorization
+  for overage charges. Exited without activating it. The owner explicitly approved
+  a separate zero-billing named-key staging gateway, keeping Clerk as account auth.
+- Implemented 256-bit generated tester keys (only hashes in runtime configuration),
+  30-minute signed host-only Secure/HttpOnly gateway cookies, expiring/revocable
+  tester grants, exact-origin mutation checks, bounded bodies and D1-backed atomic
+  login throttling. SameSite=Lax permits top-level Clerk/OAuth return navigations;
+  exact-origin writes and account bearer verification remain mandatory.
+- Every private static/account/API path runs through the gateway. Immutable and
+  alternate origins are denied. The API verifies the gateway independently and
+  binds its tester identity to Clerk's verified primary mailbox. Account assets
+  additionally default to disabled through STAGING_CONTENT_ENABLED=false.
+- Created the free `randomtools-web-staging` Pages project. Verified both production
+  and preview fail_open=false through the Cloudflare API before uploading account
+  assets. Deployed `randomtools-api-staging`, version
+  `1df64565-b26f-4f04-b0ab-6c4e4590d7f7`, with only the existing staging D1 binding
+  and scheduled cleanup. workers.dev and version-preview URLs are disabled.
+- Provisioned backend/gateway/rate-limit secrets securely; tester subjects remain
+  deny-all until verified registration. Remote D1 has all three migrations and was
+  checked empty (zero users, identities and subscriptions). No live payment secret
+  was provisioned; PAYMENTS_ENABLED=false.
+- Deployed the real private Pages artifact (`d1a1c05c`) after 15 denial-probe checks
+  passed. The final API version is `1e901dc2-ea9e-4ceb-ad9d-50574fb19322`.
+  All 28 hosted private HTTP checks passed, including anonymous/immutable denial,
+  exact-origin logout, secure cookie flags, CSP and Clerk-required Pro/admin.
+  Native browser login exposed a no-referrer/form-Origin conflict; corrected the
+  private guard to same-origin and verified real browser login. The advanced
+  Worker now supplies generated CSP independently of Pages asset `_headers`.
+- Created the explicitly approved deletion-only Clerk webhook, stored its signing
+  secret privately and provisioned the API. A genuine provider-signed example
+  returned 200; unsigned delivery returned 401. No real user was deleted.
+- Sent the approved development invitation and located it in Gmail Spam. Generic
+  signup is restricted as intended. The in-app browser invitation flow reached
+  Clerk security reference 1IKFLzKM; no security controls were bypassed. Normal
+  Chrome was reconnected with owner assistance; its invitation attempt also
+  reached Clerk's block (RdRPqwiA). The owner has that tab for a manual attempt.
+  Account subject allowlist remains empty and no temporary Pro/admin was granted.
+- All 59 unit/integration tests, the existing 48 browser tests, 40 local public
+  artifact checks and eight hosted private gateway/accessibility checks passed.
+  Typecheck, lint, backup/restore and private/public builds passed. The two long
+  real-D1 matrices allow 30 seconds rather than five; assertions are unchanged.
+- Initial Cloudflare GraphQL observation: 17 API invocations, CPU p50 3.098 ms,
+  p99 24.102 ms, zero errors. Schema confirms microsecond source units. This is
+  gateway/unauthenticated/webhook traffic, not a representative authenticated
+  Free-plan benchmark. The high tail needs investigation; actual hosted account,
+  Pro/admin and authenticated CPU tests still depend on human registration.
+
 ## Phase 2 quality and SaaS testing — 31 October 2026
 
 Continued the existing repository from `5a6fbc5` on `codex/phase2-quality`.

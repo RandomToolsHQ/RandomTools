@@ -16,9 +16,12 @@
     "src",
     "worker",
     "functions",
+    "staging/guard.ts",
     "tests",
     "vite.config.ts",
     "playwright.config.ts",
-    "playwright.public.config.ts"
+    "playwright.public.config.ts",
+    "playwright.private.config.ts",
+    "private-e2e"
   ]
 }
