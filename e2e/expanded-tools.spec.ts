@@ -1,5 +1,14 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
+async function settleContrast(page: Page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+}
 test("advanced generators keep sensitive results local and export valid synthetic data", async ({
   page,
 }) => {
@@ -32,6 +41,7 @@ test("advanced generators keep sensitive results local and export valid syntheti
   ).toHaveLength(6);
   expect(sent).toEqual([]);
   await page.getByRole("button", { name: "Clear results" }).click();
+  await settleContrast(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   await page.goto("/tools/roblox-usernames");
   await page.getByLabel("How many?").fill("10");
@@ -95,6 +105,7 @@ test("Minecraft lookups require consent and render provider data safely", async 
   );
   await page.getByLabel("Edition", { exact: true }).selectOption("bedrock");
   await expect(page.getByText(/No verified entries/)).toBeVisible();
+  await settleContrast(page);
   expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
   expect(
     await page.evaluate(
