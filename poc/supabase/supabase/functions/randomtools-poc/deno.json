@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "@clerk/backend": "npm:@clerk/backend@3.26.5"
+  },
+  "compilerOptions": { "strict": true }
+}

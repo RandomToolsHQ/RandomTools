@@ -1,0 +1,6 @@
+project_id = "randomtools-isolated-poc"
+
+[functions.randomtools-poc]
+# The handler validates a dedicated gateway secret AND Clerk JWT/session/profile.
+# Supabase's legacy JWT gateway does not authorize Clerk tokens.
+verify_jwt = false

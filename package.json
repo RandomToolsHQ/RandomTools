@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "poc:supabase:dev": "vite --config poc/supabase/vite.config.ts",
+    "poc:supabase:test:browser": "playwright test --config poc/supabase/playwright.config.ts",
+    "poc:supabase:build": "tsc --noEmit -p poc/supabase/tsconfig.json && vite build --config poc/supabase/vite.config.ts",
     "dev": "vite --host 127.0.0.1",
     "dev:api": "wrangler dev --config wrangler.api.toml",
     "build": "tsc --noEmit && vite build && node scripts/seo.mjs",
@@ -40,6 +43,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@cloudflare/workers-types": "latest",
+    "@electric-sql/pglite": "0.5.14",
     "@eslint/js": "latest",
     "@playwright/test": "latest",
     "@tailwindcss/vite": "latest",

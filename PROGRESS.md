@@ -1,5 +1,41 @@
 # RandomTools implementation status
 
+## Phase 5 isolated Supabase proof of concept — 2 November 2026
+
+Work is isolated on `codex/supabase-free-poc`, based on `ab76f00`. Neither
+Cloudflare deployment, routing, credential configuration nor genuine account data
+was changed. No live payment code or Ko-fi secret was added.
+
+- Created the separate Supabase organization **RandomTools isolated POC** on Free
+  without a payment method, paid trial or billing authorization. Owner approved
+  signup terms. Project `randomtools-poc` is prepared in Sydney, automatic table
+  exposure off and automatic RLS on. Project creation remains pending at the
+  owner's request; do not claim project-level requirements are fully verified.
+- Added all 15 tables/indexes in private Postgres schema `rt_poc` and a minimal
+  Edge API for account/workspace reads, scoped preset saves/deletes and audited
+  admin summary. Direct client table/RPC grants are denied. Write/audit atomicity,
+  fresh permissions and a distributed pre-Clerk rate budget are enforced in SQL.
+- Clerk remains required: real SDK JWT verification, exact issuer/authorized party,
+  explicit synthetic subject/mailbox allowlist, live session/profile checks,
+  expiry and banned/locked checks. New prototype-only access key and dedicated
+  Clerk development credentials are required; existing staging credentials/data
+  are not copied. Missing configuration fails closed; no hosted POC is enabled.
+- Added real local Postgres/PGlite tests, real generated-RSA JWT verification
+  with synthetic provider HTTP responses, a local snapshot restore check and a
+  bounded hosted benchmark harness. A separate loopback-only Clerk frontend can
+  obtain normal fresh tokens without exporting them. Local results are not hosted performance or
+  real provider-flow evidence. See [POC workflow](poc/supabase/README.md) and
+  [all-table migration plan](poc/supabase/MIGRATION.md).
+- Supabase CPU/latency/failure/cold-start/inactivity and actual Clerk revocation
+  measurements remain blocked on project creation and dedicated test credentials.
+  Keep the existing Cloudflare architecture; decide on migration only after the
+  separate hosted POC passes. No spending, paid feature or backend switch occurred.
+- Local validation passed: typecheck, lint, all 85 unit/integration tests (23 new
+  POC cases), Deno entrypoint check, separate POC frontend build, fail-closed local
+  harness browser test, existing application/Pages build and D1 backup/restore.
+  Staged Gitleaks scan found no secrets. GitHub CI validates the separate branch;
+  it performs no deployments.
+
 ## Phase 3 CPU and security continuation — 2 November 2026
 
 This entry supersedes the unfinished checkpoints below. The existing public

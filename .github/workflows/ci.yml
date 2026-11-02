@@ -13,11 +13,17 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run poc:supabase:build
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --config poc/supabase/supabase/functions/randomtools-poc/deno.json poc/supabase/supabase/functions/randomtools-poc/index.ts
       - run: npm run check:backup
       - run: npm run build:pages
       - run: node scripts/check-seo.mjs
       - run: npx wrangler deploy --config wrangler.api.toml --dry-run
       - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run poc:supabase:test:browser
       - run: npm run test:e2e
       - run: npm run build:public-staging
       - run: npm run test:public
