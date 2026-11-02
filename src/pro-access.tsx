@@ -82,7 +82,12 @@ function useAccessAction() {
 }
 export function ProAccess() {
   const q = useQuery<{ pro: boolean; requests: RequestRow[]; grants: Grant[] }>(
-    { queryKey: ["pro-access"], queryFn: () => api("/pro-access"), retry: 1 },
+    {
+      queryKey: ["pro-access"],
+      queryFn: () => api("/pro-access"),
+      retry: 1,
+      refetchInterval: 30000,
+    },
   );
   const action = useAccessAction();
   const [reason, setReason] = useState("");
@@ -97,6 +102,14 @@ export function ProAccess() {
       </div>
     );
   const pending = q.data.requests.find((r) => r.status === "pending");
+  const latest = q.data.grants[0];
+  const summary = q.data.pro
+    ? "Active"
+    : pending
+      ? "Pending"
+      : latest
+        ? state(latest)
+        : q.data.requests[0]?.status || "Not requested";
   return (
     <div className="pro-management">
       <div className="panel pro-access-intro">
@@ -107,9 +120,14 @@ export function ProAccess() {
             : "A little more room to create."}
         </h2>
         <p>
-          All 18 free tools stay available. Pro adds saved workspaces, batch
-          tools and advanced exports. Access is manually approved, with no
-          payment or subscription required.
+          All free tools stay available. Pro adds saved workspaces, batch tools
+          and advanced exports. Access is manually approved, with no payment or
+          subscription required.
+        </p>
+        <p role="status">
+          Current Pro access: <strong>{summary}</strong>. Requests and grants
+          are separate: a previous approval does not override expiry or
+          revocation.
         </p>
         <p>
           Grants last 7 days, 30 days, or until revoked. Permanent means no

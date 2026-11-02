@@ -388,7 +388,7 @@ export default function Account({ page }: { page: string }) {
         <div className="panel" style={{ marginTop: 24 }}>
           <h2>Your essentials, ready to go.</h2>
           <p>
-            All 18 tools are free. Favourites and your theme are saved on this
+            All tools are free. Favourites and your theme are saved on this
             device. Pro adds a synced workspace, saved presets and workflows.
           </p>
           <Link className="primary" to="/tools">

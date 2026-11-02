@@ -1,0 +1,1 @@
+CREATE TABLE server_favourites (user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,server_id TEXT NOT NULL CHECK(server_id IN ('hypixel','cubecraft','minemen-eu','minemen-na','minemen-as')),created_at INTEGER NOT NULL,PRIMARY KEY(user_id, server_id));

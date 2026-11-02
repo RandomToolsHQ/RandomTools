@@ -1,5 +1,62 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+
+test("previous approval cannot disguise expired or revoked Pro access", async ({
+  page,
+}) => {
+  let revoked = false;
+  await page.route("**/api/me", (r) =>
+    r.fulfill({
+      json: {
+        user: {
+          id: "status-fixture",
+          name: "Synthetic",
+          email: "status@example.test",
+          role: "free",
+          verified: true,
+        },
+        pro: false,
+      },
+    }),
+  );
+  await page.route("**/api/pro-access", (r) =>
+    r.fulfill({
+      json: {
+        pro: false,
+        requests: [
+          {
+            id: "request",
+            reason: "Synthetic",
+            status: "approved",
+            created_at: 1,
+            decided_at: 2,
+          },
+        ],
+        grants: [
+          {
+            id: "grant",
+            duration: "7d",
+            granted_at: 2,
+            expires_at: 3,
+            revoked_at: revoked ? 4 : null,
+          },
+        ],
+      },
+    }),
+  );
+  await page.goto("/subscription");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Current Pro access:" }),
+  ).toContainText("expired");
+  await expect(
+    page.getByRole("button", { name: "Request Pro access", exact: true }),
+  ).toBeVisible();
+  revoked = true;
+  await page.reload();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Current Pro access:" }),
+  ).toContainText("revoked");
+});
 test("members request access once, see statuses, and never see paid controls", async ({
   page,
 }) => {
@@ -74,7 +131,9 @@ test("members request access once, see statuses, and never see paid controls", a
   expect(await page.evaluate(() => "unsafeFixture" in window)).toBe(false);
   status = "denied";
   await page.reload();
-  await expect(page.getByText("denied", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("article").getByText("denied", { exact: true }),
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Request Pro access", exact: true }),
   ).toBeVisible();

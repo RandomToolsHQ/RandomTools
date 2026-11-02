@@ -113,6 +113,27 @@ export const tools = [
     "Gaming",
     "❄",
   ],
+  [
+    "minecraft",
+    "Minecraft server finder",
+    "Browse source-linked servers and check public Java or Bedrock status.",
+    "Gaming",
+    "▦",
+  ],
+  [
+    "roblox-usernames",
+    "Roblox username ideas",
+    "Generate themed usernames locally; availability is not checked.",
+    "Gaming",
+    "R",
+  ],
+  [
+    "test-identities",
+    "Fictional test identities",
+    "Create synthetic profiles and reserved-domain emails for testing.",
+    "Developer",
+    "@",
+  ],
 ].map(([id, name, description, category, icon]) => ({
   id,
   name,

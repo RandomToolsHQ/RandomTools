@@ -31,8 +31,11 @@ import {
   Moon,
 } from "lucide-react";
 import { tools } from "./catalog";
+import { storedTools, rememberTool } from "./tool-storage";
 import { api } from "./api";
 import "./style.css";
+const GeneratorTools = lazy(() => import("./GeneratorTools"));
+const MinecraftFinder = lazy(() => import("./MinecraftFinder"));
 const ToolPage = lazy(() => import("./ToolPage"));
 const Account = /* @__PURE__ */ lazy(() => import("./account"));
 const StagingQA =
@@ -41,7 +44,32 @@ const StagingQA =
     : null;
 function ToolRoute() {
   const { id } = useParams();
-  return <ToolPage key={id} />;
+  const availability = useQuery({
+    queryKey: ["tools"],
+    queryFn: () => api("/tools"),
+    staleTime: 300000,
+  });
+  useEffect(() => {
+    if (id) rememberTool(id);
+  }, [id]);
+  if (
+    availability.data?.availability?.some(
+      (t: { tool: string; enabled: boolean }) => t.tool === id && !t.enabled,
+    )
+  )
+    return (
+      <section className="text-page">
+        <h1>This tool is temporarily unavailable.</h1>
+        <p>Please check back later.</p>
+      </section>
+    );
+  return id === "minecraft" ? (
+    <MinecraftFinder />
+  ) : ["password", "roblox-usernames", "test-identities"].includes(id || "") ? (
+    <GeneratorTools key={id} />
+  ) : (
+    <ToolPage key={id} />
+  );
 }
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } },
@@ -311,6 +339,8 @@ function App() {
   );
 }
 function Directory({ home = false }: { home?: boolean }) {
+  const [recent] = useState(() => storedTools("recent-tools"));
+  const [storageNotice, setStorageNotice] = useState("");
   const [search, setSearch] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -354,6 +384,7 @@ function Directory({ home = false }: { home?: boolean }) {
         (a: any) => a.tool === t.id && !a.enabled,
       ) &&
       (category === "All tools" ||
+        (category === "Recent" && recent.includes(t.id)) ||
         (category === "Favourites" && favorites.includes(t.id)) ||
         t.category === category) &&
       (t.name + " " + t.description)
@@ -365,7 +396,13 @@ function Directory({ home = false }: { home?: boolean }) {
       ? favorites.filter((v) => v !== id)
       : [...favorites, id];
     setFavorites(next);
-    localStorage.setItem("favorites", JSON.stringify(next));
+    try {
+      localStorage.setItem("favorites", JSON.stringify(next));
+    } catch {
+      setStorageNotice(
+        "Device storage is unavailable. Favourites work only until you leave this page.",
+      );
+    }
   }
   return (
     <>
@@ -401,7 +438,7 @@ function Directory({ home = false }: { home?: boolean }) {
             <div className="hero-trust">
               <span>
                 <Check size={14} />
-                18 free tools
+                {tools.length} free tools
               </span>
               <span>
                 <Check size={14} />
@@ -449,8 +486,11 @@ function Directory({ home = false }: { home?: boolean }) {
             </h2>
             <p>Pick a tool and get straight to the good part.</p>
           </div>
-          <span className="count">18 tools. Always within reach.</span>
+          <span className="count">
+            {tools.length} tools. Always within reach.
+          </span>
         </div>
+        {storageNotice && <p role="status">{storageNotice}</p>}
         <div className="directory-bar">
           <div className="tabs" aria-label="Tool categories">
             {[
@@ -459,6 +499,7 @@ function Directory({ home = false }: { home?: boolean }) {
               "Utilities",
               "Gaming",
               "Favourites",
+              "Recent",
             ].map((c) => (
               <button
                 key={c}
@@ -553,7 +594,7 @@ function Restricted() {
       <h1>Restricted testing area</h1>
       <p>
         Accounts, admin and Pro workspaces are available only in controlled
-        testing. This public preview includes the 18 free browser tools.
+        testing. This public preview includes the free browser tools.
       </p>
       <Link className="primary" to="/tools">
         Explore free tools
@@ -587,7 +628,7 @@ function Pro() {
         <div className="panel price">
           <h2>Free tools</h2>
           <strong>Free</strong>
-          <p>All 18 tools · no payment required</p>
+          <p>All free tools · no payment required</p>
           <p>
             <Check size={16} />
             Local browser processing
@@ -638,9 +679,11 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
         <>
           <h2>Your tools, your data</h2>
           <p>
-            Free tools process text and files locally in your browser. Tool
-            inputs are not sent to our server. Local favourites and theme
-            preferences are stored on your device.
+            Generators and converters process text and files locally in your
+            browser. Their inputs are not sent to our server. Local favourites
+            and theme preferences are stored on your device. Optional Minecraft
+            status checks send your IP and the selected server address to
+            mcstatus.io; no lookups occur without your consent.
           </p>
           {publicToolsOnly && (
             <p>
@@ -681,11 +724,11 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
           </p>
           <h2>Memberships</h2>
           <p>
-            The 18 free tools require no payment. Pro access is manually
-            approved and may last 7 days, 30 days, or have no scheduled expiry.
-            An administrator can revoke access, including permanent grants.
-            Payments and paid subscriptions are disabled. Contact support about
-            access issues.
+            The {tools.length} free tools require no payment. Pro access is
+            manually approved and may last 7 days, 30 days, or have no scheduled
+            expiry. An administrator can revoke access, including permanent
+            grants. Payments and paid subscriptions are disabled. Contact
+            support about access issues.
           </p>
           <h2>Your rights</h2>
           <p>

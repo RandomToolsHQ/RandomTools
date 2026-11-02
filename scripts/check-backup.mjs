@@ -37,6 +37,7 @@ await writeFile(
   fixture,
   `INSERT INTO users VALUES('backup-fixture','backup@example.test','O''Brien','synthetic-not-a-password','free',1,0,1);
 INSERT INTO user_preferences VALUES('backup-fixture','{"theme":"light","favorites":["json"]}',7);
+INSERT INTO server_favourites VALUES('backup-fixture','hypixel',1);
 INSERT INTO saved_presets VALUES('preset','backup-fixture','workflow','Saved workflow','{"steps":["trim","lower"]}',1);
 INSERT INTO tool_history VALUES('history','backup-fixture','case','Private fixture output',1);
 INSERT INTO auth_identities VALUES('https://backup.clerk.accounts.dev','user_backup','backup-fixture','active',1);
@@ -90,9 +91,14 @@ if (
   grant[0].results[0]?.request_id !== "manual-request"
 )
   throw Error("Restored manual Pro grant differs");
+const favourite = await query(
+  "SELECT server_id FROM server_favourites WHERE user_id='backup-fixture'",
+);
+if (favourite[0].results[0]?.server_id !== "hypixel")
+  throw Error("Restored server favourite differs");
 await query("DELETE FROM users WHERE id='backup-fixture'");
 const cascades = await query(
-  "SELECT (SELECT count(*) FROM saved_presets)+(SELECT count(*) FROM tool_history)+(SELECT count(*) FROM user_preferences)+(SELECT count(*) FROM pro_access_requests)+(SELECT count(*) FROM pro_grants) AS remaining",
+  "SELECT (SELECT count(*) FROM saved_presets)+(SELECT count(*) FROM tool_history)+(SELECT count(*) FROM user_preferences)+(SELECT count(*) FROM pro_access_requests)+(SELECT count(*) FROM pro_grants)+(SELECT count(*) FROM server_favourites) AS remaining",
 );
 if (cascades[0].results[0]?.remaining !== 0)
   throw Error("Restored deletion constraints failed");

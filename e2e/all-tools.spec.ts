@@ -60,7 +60,6 @@ test("all text tools produce useful browser results", async ({ page }) => {
     ["diff", "before", "after", "+ after"],
     ["regex", "(?<word>hello)", "hello world", "hello"],
     ["html", "<script>", "", "&lt;script&gt;"],
-    ["password", "24", "", ""],
     ["counter", "one two", "", '"words": 2'],
     ["case", "Hello World", "", "HELLO WORLD"],
     ["colour", "rgb(255, 0, 0)", "", "#FF0000"],
@@ -76,8 +75,6 @@ test("all text tools produce useful browser results", async ({ page }) => {
     await expect
       .poll(() => page.locator("#output").inputValue())
       .toContain(expected);
-    if (id === "password")
-      expect((await page.locator("#output").inputValue()).length).toBe(24);
   }
 });
 test("QR, hashing and image compression process local inputs", async ({

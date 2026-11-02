@@ -6,6 +6,7 @@ export default defineConfig({
     "accessibility.spec.ts",
     "tools.spec.ts",
     "public-preview.spec.ts",
+    "expanded-tools.spec.ts",
   ],
   workers: 2,
   use: { baseURL: process.env.PUBLIC_TEST_URL || "http://localhost:8793" },

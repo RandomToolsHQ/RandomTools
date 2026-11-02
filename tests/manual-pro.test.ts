@@ -98,6 +98,45 @@ beforeEach(async () => {
       .run();
   }
 });
+it("keeps free server favourites account-owned, deduplicated, exported and deleted", async () => {
+  const path = "/account/server-favourites";
+  expect((await call(path, "")).status).toBe(401);
+  expect((await call(path, "disabled", { serverId: "hypixel" })).status).toBe(
+    401,
+  );
+  expect((await call(path, "unverified", { serverId: "hypixel" })).status).toBe(
+    403,
+  );
+  expect(
+    (await call(path, "owner", { serverId: "hypixel", userId: "other" }))
+      .status,
+  ).toBe(400);
+  expect((await call(path, "owner", { serverId: "attacker" })).status).toBe(
+    400,
+  );
+  for (let i = 0; i < 2; i++)
+    expect((await call(path, "owner", { serverId: "hypixel" })).status).toBe(
+      200,
+    );
+  expect(await (await call(path, "owner")).json()).toEqual({
+    favourites: ["hypixel"],
+  });
+  expect(await (await call(path, "other")).json()).toEqual({ favourites: [] });
+  expect(
+    (await call(path, "other", { serverId: "hypixel" }, "DELETE")).status,
+  ).toBe(200);
+  expect(await (await call(path, "owner")).json()).toEqual({
+    favourites: ["hypixel"],
+  });
+  const exported = (await (await call("/account/export", "owner")).json()) as {
+    server_favourites: unknown[];
+  };
+  expect(exported.server_favourites).toHaveLength(1);
+  await db.prepare("DELETE FROM users WHERE id='owner'").run();
+  expect(
+    (await db.prepare("SELECT * FROM server_favourites").all()).results,
+  ).toHaveLength(0);
+});
 it("requires authentication for requests, status and administrator operations", async () => {
   for (const [path, body] of [
     ["/pro-access", undefined],

@@ -44,13 +44,13 @@ const routes = [
     path: "/",
     title: "Your everyday toolkit",
     description:
-      "18 useful browser tools for developers, creators and the everyday curious. Format, convert, create and simplify.",
+      "Useful browser tools for developers, creators and the everyday curious. Format, convert, create and simplify.",
   },
   {
     path: "/tools",
     title: "Explore the toolbox",
     description:
-      "Browse all 18 free RandomTools utilities. Local browser processing, useful results and no account required.",
+      "Browse all free RandomTools utilities. Local browser processing, useful results and no account required.",
   },
   {
     path: "/pro",

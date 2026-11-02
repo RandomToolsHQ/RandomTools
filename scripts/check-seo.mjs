@@ -28,6 +28,9 @@ const paths = [
     "hash",
     "discord",
     "snowflake",
+    "minecraft",
+    "roblox-usernames",
+    "test-identities",
   ].map((id) => "/tools/" + id),
 ];
 const titles = new Set();
@@ -75,7 +78,7 @@ for (const path of [
 if (origin) {
   const sitemap = await readFile("dist/sitemap.xml", "utf8");
   if (
-    (sitemap.match(/<url>/g) || []).length !== 24 ||
+    (sitemap.match(/<url>/g) || []).length !== paths.length ||
     sitemap.includes("/dashboard")
   )
     throw Error("Unexpected sitemap content");
@@ -94,5 +97,5 @@ if (origin) {
   }
 }
 process.stdout.write(
-  `SEO checks passed for 24 public and 10 private pages (${origin ? "configured origin" : "no invented origin"}).\n`,
+  `SEO checks passed for ${paths.length} public and 10 private pages (${origin ? "configured origin" : "no invented origin"}).\n`,
 );

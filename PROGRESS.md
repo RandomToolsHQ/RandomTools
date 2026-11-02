@@ -1,5 +1,38 @@
 # RandomTools implementation status
 
+## Phase 6 development — 3 November 2026
+
+`codex/phase6-integration` consolidates validated manual Pro baseline 81d73a5;
+baseline CI 41400048660 and integration checklist CI 41462004459 passed.
+`codex/phase6-free-tools` adds three free entries (21 total), advanced password
+and EFF passphrase generation, bulk Roblox ideas, fictional reserved-domain
+identities, source-linked Minecraft browsing/opt-in status, account-owned server
+favourites, recent tools and clearer expired/revoked Pro status. No main merge.
+
+Migration 0005 is additive and remains local only. Fresh authentication/session
+checks, account ownership, Pro/admin enforcement and disabled payments remain.
+Favourites are exported and cascade on deletion; local backup/restore exercises
+the new table. See docs/FREE-TOOLS.md for data-source constraints and rollback.
+
+Validation: 91 unit/integration/security tests passed, TypeScript/ESLint passed,
+production/Pages/public/private builds and SEO passed, Worker dry run passed,
+local backup/restore passed, eight private gateway cases passed. Browser checks
+cover Chromium desktop/mobile, Firefox and WebKit; final branch CI is the
+authoritative complete-suite result. No hosted synthetic authentication or CPU
+load was repeated: the changes do not optimize authentication and prior CPU
+evidence/limitations still apply. A real, single Chromium mcstatus.io CORS request
+returned HTTP 200 with the expected schema. External calls are opt-in; automated
+status tests use fixtures. Screenshots are ignored local artifacts, without
+generated passwords.
+
+Minecraft intentionally does not claim a complete directory, verified countries,
+game latency, supported-client versions or unverified authentication modes.
+Roblox availability is not checked. No inboxes are provisioned. Vault work remains
+in a separate local-only prototype branch/build, outside application routes.
+Launch gates: docs/LAUNCH-READINESS.md. Public preview and private staging remain
+at their existing deployments; no remote migration, public authentication,
+Supabase migration, payment, purchase or billing change occurred.
+
 ## Restricted hosted manual Pro validation — 2 November 2026
 
 This supersedes the pending-deployment notes below. Application source `cc98ed9`

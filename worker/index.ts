@@ -493,6 +493,7 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       "payment_events",
       "pro_access_requests",
       "pro_grants",
+      "server_favourites",
     ];
     const data: Record<string, unknown> = { profile: safeUser(u) };
     if (env.AUTH_PROVIDER === "clerk") {
@@ -510,6 +511,45 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
           .all()
       ).results;
     return json(data);
+  }
+  if (path === "/account/server-favourites") {
+    if (!u.verified) fail(403, "Verify your account before saving favourites");
+    if (req.method === "GET")
+      return json({
+        favourites: (
+          await env.DB.prepare(
+            "SELECT server_id FROM server_favourites WHERE user_id=? ORDER BY created_at,server_id",
+          )
+            .bind(u.id)
+            .all()
+        ).results.map((row) => row.server_id),
+      });
+    if (req.method === "POST" || req.method === "DELETE") {
+      const b = z
+        .object({
+          serverId: z.enum([
+            "hypixel",
+            "cubecraft",
+            "minemen-eu",
+            "minemen-na",
+            "minemen-as",
+          ]),
+        })
+        .strict()
+        .parse(await parse(req));
+      await rate(env, "server-favourites:" + u.id, 30);
+      await (
+        req.method === "POST"
+          ? env.DB.prepare(
+              "INSERT OR IGNORE INTO server_favourites(user_id,server_id,created_at) VALUES(?,?,?)",
+            ).bind(u.id, b.serverId, now())
+          : env.DB.prepare(
+              "DELETE FROM server_favourites WHERE user_id=? AND server_id=?",
+            ).bind(u.id, b.serverId)
+      ).run();
+      return json({ saved: true });
+    }
+    fail(405, "Method not allowed");
   }
   if (path === "/subscription" && req.method === "GET")
     return json(await accessStatus(env, u));

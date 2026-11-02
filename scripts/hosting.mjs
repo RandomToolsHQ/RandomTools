@@ -20,8 +20,8 @@ if (key) {
       `script-src 'self' https://${host} https://challenges.cloudflare.com https://*.protect.clerk.com;`,
     )
     .replace(
-      "connect-src 'self';",
-      `connect-src 'self' https://${host} https://clerk-telemetry.com https://*.protect.clerk.com:*;`,
+      "connect-src 'self' https://api.mcstatus.io;",
+      `connect-src 'self' https://api.mcstatus.io https://${host} https://clerk-telemetry.com https://*.protect.clerk.com:*;`,
     )
     .replace(
       "img-src 'self' data: blob:;",
