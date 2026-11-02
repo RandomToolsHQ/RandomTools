@@ -190,7 +190,9 @@ describe("managed Clerk identity with real isolated D1", () => {
           .status,
       ).toBe(403);
     await db
-      .prepare("INSERT INTO subscriptions VALUES(?,?,NULL,?,'fixture',1)")
+      .prepare(
+        "INSERT INTO pro_grants(id,user_id,duration,expires_at,granted_at) VALUES(?,?,'7d',?,1)",
+      )
       .bind("sub_" + subject, user.id, Math.floor(Date.now() / 1000) + 3600)
       .run();
     expect(
@@ -248,7 +250,7 @@ describe("managed Clerk identity with real isolated D1", () => {
     await call("/pro/history", "POST", { tool: "case", data: "do not retain" });
     expect(await (await call("/pro/history")).json()).toEqual([]);
     await db
-      .prepare("UPDATE subscriptions SET paid_through=1 WHERE user_id=?")
+      .prepare("UPDATE pro_grants SET expires_at=2 WHERE user_id=?")
       .bind(user.id)
       .run();
     for (const [path, method] of verbs)
@@ -302,7 +304,7 @@ describe("managed Clerk identity with real isolated D1", () => {
     expect(
       (await call("/admin/users", { id: user.id, disabled: true })).status,
     ).toBe(400);
-    expect((await call("/admin/mock-payment", {})).status).toBe(404);
+    expect((await call("/admin/mock-payment", {})).status).toBe(410);
     const target = "admin_target_" + subject;
     await db
       .prepare(
@@ -338,7 +340,7 @@ describe("managed Clerk identity with real isolated D1", () => {
           reason: "manual",
         })
       ).status,
-    ).toBe(404);
+    ).toBe(410);
     expect(
       (await call("/admin/tools", { tool: "missing", enabled: false })).status,
     ).toBe(400);
@@ -492,7 +494,7 @@ describe("managed Clerk identity with real isolated D1", () => {
       new Request(origin + "/api/webhooks/kofi", { method: "POST" }),
       env,
     );
-    expect(payment.status).toBe(503);
+    expect(payment.status).toBe(404);
     await expect(
       managedCurrent(req(), { ...env, ENVIRONMENT: "production" }),
     ).rejects.toThrow("live Clerk");

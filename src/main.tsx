@@ -30,7 +30,7 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
-import { tools, pricing } from "./catalog";
+import { tools } from "./catalog";
 import { api } from "./api";
 import "./style.css";
 const ToolPage = lazy(() => import("./ToolPage"));
@@ -583,64 +583,48 @@ function Pro() {
       <p className="lead">
         The everyday essentials are free. Pro brings your workspace together.
       </p>
-      <div className="pricing-grid">
-        {[
-          {
-            name: "Free",
-            price: "A$0",
-            period: "forever",
-            items: [
-              "All 18 free tools",
-              "Local browser processing",
-              "Local favourites",
-            ],
-          },
-          {
-            name: "Pro Monthly",
-            price: `A$${pricing.monthly}`,
-            period: "AUD / month · proposed",
-            items: [
-              "Saved presets and workflows",
-              "Cloud preferences and favourites",
-              "Private history with retention controls",
-              "Batch workspace and advanced exports",
-            ],
-          },
-          {
-            name: "Pro Yearly",
-            price: `A$${pricing.yearly}`,
-            period: "AUD / year · proposed",
-            items: [
-              "Planned annual option",
-              "Not available for purchase",
-              "Subject to provider configuration",
-            ],
-          },
-        ].map((p) => (
-          <div className="panel price" key={p.name}>
-            <h2>{p.name}</h2>
-            <strong>{p.price}</strong>
-            <p>{p.period}</p>
-            {p.items.map((s) => (
-              <p key={s}>
-                <Check size={16} />
-                {s}
-              </p>
-            ))}
-            <Link
-              className="secondary"
-              to={p.name === "Free" ? "/tools" : "/subscription"}
-            >
-              {p.name === "Free" ? "Explore tools" : "View membership status"}{" "}
-              <ArrowRight size={16} />
-            </Link>
-          </div>
-        ))}
+      <div className="pricing-grid free-first-grid">
+        <div className="panel price">
+          <h2>Free tools</h2>
+          <strong>Free</strong>
+          <p>All 18 tools · no payment required</p>
+          <p>
+            <Check size={16} />
+            Local browser processing
+          </p>
+          <p>
+            <Check size={16} />
+            Favourites on your device
+          </p>
+          <Link className="secondary" to="/tools">
+            Explore tools <ArrowRight size={16} />
+          </Link>
+        </div>
+        <div className="panel price">
+          <h2>Pro access</h2>
+          <strong>By approval</strong>
+          <p>No paid subscriptions</p>
+          <p>
+            <Check size={16} />
+            Saved presets, workflows and preferences
+          </p>
+          <p>
+            <Check size={16} />
+            Batch workspace, advanced exports and private history
+          </p>
+          <p>
+            Ask for access from your account. An administrator can approve
+            7-day, 30-day or permanent access, or grant access directly.
+          </p>
+          <Link className="secondary" to="/subscription">
+            Request Pro access <ArrowRight size={16} />
+          </Link>
+        </div>
       </div>
       <p>
-        Live checkout is disabled. Membership linking requires administrator
-        verification of authenticated Ko-fi payments. No automatic cancellation
-        detection is promised.
+        RandomTools is free first. Payments and paid subscription flows are
+        disabled. Account features remain in controlled testing; requesting
+        access does not guarantee approval.
       </p>
     </section>
   );
@@ -670,19 +654,19 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
             Clerk manages authentication for controlled testing. D1 stores
             application profiles and session records. Pro users may explicitly
             save presets, workflows and history. Account settings provide
-            export, retention and deletion controls. Payment notifications are
-            retained for membership reconciliation; do not submit sensitive tool
-            content to saved records.
+            export, retention and deletion controls. Pro access requests and
+            manual grants are stored to manage access. Do not submit sensitive
+            information in requests or saved records.
           </p>
           <h2>Service providers and retention</h2>
           <p>
-            Hosting uses Cloudflare. Membership payments are handled by Ko-fi
-            under its own privacy terms. When configured, Resend receives your
-            email address and one-time verification or reset message for
-            transactional delivery. Audit records are retained for 180 days and
-            aggregate usage counts for 90 days. Saved history follows your
-            selected retention period, with daily cleanup that may lag by up to
-            24 hours. We do not sell personal information. Contact
+            Hosting uses Cloudflare. Payments and paid subscriptions are
+            disabled; no payment provider is activated. When configured, Resend
+            receives your email address and one-time verification or reset
+            message for transactional delivery. Audit records are retained for
+            180 days and aggregate usage counts for 90 days. Saved history
+            follows your selected retention period, with daily cleanup that may
+            lag by up to 24 hours. We do not sell personal information. Contact
             randomtoolshq@gmail.com for access or privacy requests.
           </p>
         </>
@@ -697,16 +681,18 @@ function Legal({ privacy = false }: { privacy?: boolean }) {
           </p>
           <h2>Memberships</h2>
           <p>
-            Prices are in AUD. Proposed plans are not offers for active
-            checkout. Confirmed memberships expire on their paid-through date.
-            Ko-fi manages payment and cancellation; account linking may require
-            manual verification. Contact support about billing or access issues.
+            The 18 free tools require no payment. Pro access is manually
+            approved and may last 7 days, 30 days, or have no scheduled expiry.
+            An administrator can revoke access, including permanent grants.
+            Payments and paid subscriptions are disabled. Contact support about
+            access issues.
           </p>
           <h2>Your rights</h2>
           <p>
             Nothing in these terms excludes rights that cannot be excluded under
             Australian Consumer Law. The service may change; material account or
-            subscription changes should be communicated before they take effect.
+            access-policy changes should be communicated before they take
+            effect.
           </p>
         </>
       )}

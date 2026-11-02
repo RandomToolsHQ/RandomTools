@@ -1,0 +1,7 @@
+CREATE TABLE pro_access_requests (id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=500),status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','denied')),created_at INTEGER NOT NULL,decided_at INTEGER,decided_by TEXT REFERENCES users(id) ON DELETE SET NULL,decision_id TEXT UNIQUE);
+CREATE UNIQUE INDEX pro_one_pending_request ON pro_access_requests(user_id) WHERE status='pending';
+CREATE INDEX pro_requests_review ON pro_access_requests(status,created_at);
+CREATE INDEX pro_requests_owner ON pro_access_requests(user_id,created_at);
+CREATE TABLE pro_grants (id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,duration TEXT NOT NULL CHECK(duration IN ('7d','30d','permanent')),expires_at INTEGER,granted_at INTEGER NOT NULL,granted_by TEXT REFERENCES users(id) ON DELETE SET NULL,request_id TEXT UNIQUE REFERENCES pro_access_requests(id) ON DELETE SET NULL,revoked_at INTEGER,revoked_by TEXT REFERENCES users(id) ON DELETE SET NULL,revoke_operation TEXT,revocation_reason TEXT,CHECK((duration='permanent' AND expires_at IS NULL) OR (duration IN ('7d','30d') AND expires_at IS NOT NULL AND expires_at>granted_at)));
+CREATE UNIQUE INDEX pro_one_current_grant ON pro_grants(user_id) WHERE revoked_at IS NULL;
+CREATE INDEX pro_grants_owner ON pro_grants(user_id,expires_at);

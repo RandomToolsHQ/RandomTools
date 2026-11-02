@@ -1,5 +1,14 @@
 # Ko-fi integration
 
+**ARCHIVED / INACTIVE — free-first roadmap, 2 November 2026.** The material below
+documents preserved payment implementation, not current setup instructions.
+Do not configure a provider, secret, payment link or live webhook. Current code
+hard-disables webhook ingestion, paid claims, reconciliation, mock payments and
+paid-subscription management in every environment. Environment flags cannot
+reactivate these routes. Historical payment rows do not grant Pro. Use manual
+requests/grants in [ADMIN-SETUP.md](ADMIN-SETUP.md). Any future payment launch needs
+explicit owner approval plus a new code, security and data migration review.
+
 Official reference: https://help.ko-fi.com/hc/en-us/articles/360004162298-Does-Ko-fi-have-an-API-or-webhook
 
 POST `/api/webhooks/kofi` accepts Ko-fi's form field `data` containing JSON. It requires a configured verification token and PAYMENTS_ENABLED=true. The token is compared through fixed-length hashes, never logged or persisted. Payloads are size-limited and validated. Message IDs and transaction IDs are unique; duplicate notifications acknowledge without extending access. Only membership notifications can be reconciled. Client-supplied payment amounts never grant access.

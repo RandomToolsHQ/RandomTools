@@ -9,6 +9,12 @@ import {
 } from "./clerk";
 import { z } from "zod";
 import {
+  hasPro as pro,
+  accessStatus,
+  proAccessRoute,
+  ProAccessError,
+} from "./pro-access";
+import {
   AccessError,
   requireStagingAccess,
   type AccessEnvironment,
@@ -98,16 +104,6 @@ async function current(req: Request, env: Env, accessEmail?: string) {
   )
     .bind(digest(cookie), now())
     .first<User>();
-}
-async function pro(env: Env, user: User) {
-  return (
-    user.role === "admin" ||
-    !!(await env.DB.prepare(
-      "SELECT id FROM subscriptions WHERE user_id=? AND paid_through>? LIMIT 1",
-    )
-      .bind(user.id, now())
-      .first())
-  );
 }
 async function audit(env: Env, actor: string, action: string, target: string) {
   await env.DB.prepare("INSERT INTO audit_logs VALUES(?,?,?,?,?)")
@@ -217,7 +213,9 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       ? await requireStagingAccess(req, env)
       : undefined;
   if (path === "/webhooks/kofi" && req.method === "POST")
-    return webhook(req, env);
+    // Hard stop: env flags and provider secrets cannot reactivate payments.
+    // Reviewed implementation below is retained for an explicitly approved future change.
+    return json({ error: "Payments are unavailable" }, 404);
   if (!["GET", "HEAD"].includes(req.method)) {
     if (
       req.headers.get("origin") !== env.APP_ORIGIN ||
@@ -411,6 +409,10 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
   }
   if (!user) fail(401, "Sign in to continue");
   const u = user!;
+  if (path === "/pro-access/requests" && req.method === "POST")
+    await rate(env, "pro-request:" + u.id, 5);
+  const manualAccess = await proAccessRoute(req, env, u, path);
+  if (manualAccess) return manualAccess;
   if (path === "/auth/logout" && req.method === "POST") {
     if (env.AUTH_PROVIDER === "clerk") {
       await clerkClient(env).sessions.revokeSession(
@@ -489,6 +491,8 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
       "subscriptions",
       "membership_claims",
       "payment_events",
+      "pro_access_requests",
+      "pro_grants",
     ];
     const data: Record<string, unknown> = { profile: safeUser(u) };
     if (env.AUTH_PROVIDER === "clerk") {
@@ -508,24 +512,12 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     return json(data);
   }
   if (path === "/subscription" && req.method === "GET")
-    return json({
-      pro: await pro(env, u),
-      subscriptions: (
-        await env.DB.prepare(
-          "SELECT paid_through,source FROM subscriptions WHERE user_id=? ORDER BY paid_through DESC",
-        )
-          .bind(u.id)
-          .all()
-      ).results,
-      claims: (
-        await env.DB.prepare(
-          "SELECT id,status,created_at FROM membership_claims WHERE user_id=?",
-        )
-          .bind(u.id)
-          .all()
-      ).results,
-      checkoutEnabled: false,
-    });
+    return json(await accessStatus(env, u));
+  if (path === "/subscription/claim")
+    fail(
+      410,
+      "Paid membership linking is disabled. Request manual Pro access instead.",
+    );
   if (path === "/subscription/claim" && req.method === "POST") {
     const b = z
       .object({ transactionId: z.string().min(3).max(100) })
@@ -674,11 +666,22 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
   }
   if (path.startsWith("/admin")) {
     if (u.role !== "admin") fail(403, "Administrator access required");
+    if (
+      [
+        "/admin/reconcile",
+        "/admin/mock-payment",
+        "/admin/subscriptions/revoke",
+      ].includes(path)
+    )
+      fail(
+        410,
+        "Paid membership management is disabled. Use manual Pro access controls.",
+      );
     if (path === "/admin" && req.method === "GET") {
       const search = (url.searchParams.get("search") || "").slice(0, 100);
       return json({
         stats: await env.DB.prepare(
-          "SELECT (SELECT count(*) FROM users) users,(SELECT count(DISTINCT user_id) FROM subscriptions WHERE paid_through>?) pro",
+          "SELECT (SELECT count(*) FROM users) users,(SELECT count(*) FROM users u WHERE u.disabled=0 AND u.verified=1 AND (u.role='admin' OR EXISTS(SELECT 1 FROM pro_grants g WHERE g.user_id=u.id AND g.revoked_at IS NULL AND (g.expires_at IS NULL OR g.expires_at>?)))) pro",
         )
           .bind(now())
           .first(),
@@ -920,6 +923,7 @@ export default {
         e instanceof BodyTooLarge
           ? json({ error: "Request too large" }, 413)
           : e instanceof HttpError ||
+              e instanceof ProAccessError ||
               e instanceof AuthError ||
               e instanceof AccessError
             ? json(
@@ -947,3 +951,6 @@ export default {
     return new Response(response.body, { status: response.status, headers: h });
   },
 };
+
+// Retained payment implementation; deliberately not connected to any route.
+void webhook;

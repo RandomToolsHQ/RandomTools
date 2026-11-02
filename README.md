@@ -1,5 +1,15 @@
 # RandomTools HQ
 
+**Roadmap: free first, manually approved Pro.** All 18 free tools remain available.
+Authenticated users can request Pro; administrators can review requests or grant
+7-day, 30-day or permanent access directly. Permanent grants remain revocable.
+Payments, checkout, payment linking and paid subscription administration are
+disabled in code, regardless of environment flags. Historical payment code/data
+is preserved for a separately reviewed future change. No provider activation is
+required. See [admin operations](docs/ADMIN-SETUP.md) and [PROGRESS.md](PROGRESS.md).
+This change is developed on `codex/manual-pro-access`; existing hosted deployments
+are unchanged until an explicitly reviewed staging release.
+
 **Public tools staging:** [randomtools-preview.pages.dev](https://randomtools-preview.pages.dev).
 All 18 free tools are available; accounts, admin and Pro workspaces are restricted
 to controlled testing. No purchased domain or live payments are required. See
@@ -12,7 +22,7 @@ Hosted authentication is being migrated to Clerk Hobby. Read
 the local password adapter described below is retained for regression tests.
 The staging schema is provisioned; hosted account sign-in remains gated.
 
-A React / TypeScript toolkit with 18 browser utilities, a D1-backed account API and an explicitly reviewed Ko-fi membership workflow. This is an implementation in progress, **not a production-ready release**. See [PROGRESS.md](PROGRESS.md) for the exact verification and release gaps.
+A React / TypeScript toolkit with 18 browser utilities, a D1-backed account API and audited manual Pro access. This is an implementation in progress, **not a production-ready release**. See [PROGRESS.md](PROGRESS.md) for the exact verification and release gaps.
 
 ## Local development (Windows PowerShell)
 
@@ -56,4 +66,4 @@ The frontend targets Cloudflare Pages. A Pages Function proxies `/api/*` through
 
 MIT was chosen to allow personal and commercial reuse, modification and contributions with a simple attribution requirement. Branding is not a grant of trademark rights. See [LICENSE](LICENSE).
 
-Contact: randomtoolshq@gmail.com · [GitHub](https://github.com/RandomToolsHQ/RandomTools) · [Ko-fi](https://ko-fi.com/itzrealfisheryt)
+Contact: randomtoolshq@gmail.com · [GitHub](https://github.com/RandomToolsHQ/RandomTools)

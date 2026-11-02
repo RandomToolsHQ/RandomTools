@@ -1,5 +1,48 @@
 # RandomTools implementation status
 
+## Free-first roadmap and manual Pro access — 2 November 2026
+
+Developed independently on `codex/manual-pro-access`, based on validated
+`ab76f00`. The Supabase POC remains on its separate branch. No hosted database,
+Cloudflare deployment, Clerk configuration or genuine account was changed.
+
+- Payments are hard-disabled regardless of environment flags. Ko-fi ingestion
+  returns 404; authenticated claims and admin paid-flow routes return 410 after
+  normal access checks. Checkout/payment links and paid management UI are removed.
+  Historical payment code/data remains intact for an explicitly approved future
+  review; old paid subscriptions cannot authorize Pro in this roadmap.
+- Migration 0004 adds manual requests and append-only grant history (17 tables
+  total). A partial unique index allows one pending request per account and one
+  unrevoked current grant. Timed grants use server epoch seconds; permanent is
+  explicit NULL expiry, still revocable. Admin roles, verified/enabled accounts,
+  expiry and revocation are read freshly from D1, never client claims or caches.
+- Users request access with an optional 500-character reason and see owned
+  pending/approved/denied requests and grant history. Admins review/deny/approve,
+  grant friends directly, choose 7-day/30-day/permanent durations, replace grants
+  and revoke with a reason. Direct grants approve an existing pending request.
+- Conditional SQL batches serialize reviews, grants and revocations and write
+  their audit events atomically. Audit failure rolls back all state changes.
+  Identity/session revocation and the private gateway remain unchanged. Export,
+  account-deletion cascades and backup/restore cover the new access records.
+- Existing admin UI now has a responsive request queue, direct recipient/duration
+  controls, status filters, grant history, accessible loading/error states and
+  explicit revocation. All 18 free tools and 12 Pro capabilities are retained.
+  Public signup stays restricted; no development authentication is published.
+- Validation: typecheck, lint and all 83 unit/integration tests passed. The eight
+  targeted browser cases passed across desktop/mobile Chromium, Firefox and
+  WebKit, with dark/light axe checks, overflow and request-text XSS checks. Local
+  D1 backup/restore passed with the new grant and deletion cascades; Pages build
+  and SEO checks passed. Two test workers avoid local CPU oversubscription while
+  retaining all full-strength password assertions. Full GitHub CI runs on this
+  isolated branch and never deploys.
+
+Remaining release gates: finish CI, review/apply migration only in an approved
+isolated staging update, rehearse manual flows with authorized hosted Clerk test
+accounts, remeasure authenticated CPU, complete production identity/domain and
+recovery/deletion/abuse/security launch checks. Prior CPU measurements do not
+prove this changed API meets Cloudflare Free. Payments/billing remain disabled;
+no purchase, domain, paid feature or production deployment is authorized here.
+
 ## Phase 3 CPU and security continuation — 2 November 2026
 
 This entry supersedes the unfinished checkpoints below. The existing public

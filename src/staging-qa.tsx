@@ -298,14 +298,14 @@ export default function StagingQA() {
         await expected(
           "live mock payment unavailable",
           "/admin/mock-payment",
-          404,
+          410,
           "POST",
           {},
         );
         await expected(
           "unmatched reconciliation rejected",
           "/admin/reconcile",
-          400,
+          410,
           "POST",
           {
             claimId: "phase3-missing",
@@ -317,7 +317,7 @@ export default function StagingQA() {
         await expected(
           "missing subscription rejected",
           "/admin/subscriptions/revoke",
-          404,
+          410,
           "POST",
           { id: "phase3-missing", reason: "manual" },
         );
@@ -338,13 +338,6 @@ export default function StagingQA() {
             { tool: "json", enabled: true },
           );
         }
-        await expected(
-          "revoke only QA subscription",
-          "/admin/subscriptions/revoke",
-          200,
-          "POST",
-          { id: "phase3_authorized_subscription", reason: "manual" },
-        );
         const after = await expected("read scoped audit events", "/admin", 200);
         check(
           "audit records actual admin actor",

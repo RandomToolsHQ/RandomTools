@@ -43,6 +43,6 @@ describe("API boundaries", () => {
       }),
       env,
     );
-    expect(r.status).toBe(503);
+    expect(r.status).toBe(404);
   });
 });

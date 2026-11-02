@@ -350,67 +350,45 @@ describe("Worker + real local D1", () => {
       await db.prepare("SELECT id FROM users WHERE id=?").bind(a.id).first(),
     ).toBeNull();
   }, 120000);
-  it("authenticates and deduplicates webhooks, requires reviewed claims, expires Pro, isolates saved data", async () => {
+  it("keeps paid routes disabled and preserves Pro isolation and concurrent quotas", async () => {
     const admin = await account("operator");
     await db
       .prepare("UPDATE users SET role='admin' WHERE id=?")
       .bind(admin.id)
       .run();
-    const a = await account("subscriber");
-    const event = {
-      verification_token: "test-only-not-a-real-secret",
-      message_id: "event-one",
-      kofi_transaction_id: "transaction-one",
-      type: "Subscription",
-      amount: "4.99",
-      currency: "AUD",
-      is_subscription_payment: true,
-    };
-    const send = (data: unknown) =>
-      mf.dispatchFetch("http://localhost/api/webhooks/kofi", {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ data: JSON.stringify(data) }).toString(),
-      });
-    expect((await send({ ...event, verification_token: "wrong" })).status).toBe(
-      401,
-    );
-    expect((await send(event)).status).toBe(200);
-    expect(await (await send(event)).json()).toEqual({
-      received: true,
-      duplicate: true,
-    });
+    const a = await account("manual-member");
     expect(
       (
         await request(
           "/subscription/claim",
-          { transactionId: event.kofi_transaction_id },
+          { transactionId: "retired" },
           a.cookie,
         )
       ).status,
-    ).toBe(200);
+    ).toBe(410);
+    expect((await request("/admin/reconcile", {}, admin.cookie)).status).toBe(
+      410,
+    );
     expect(
-      (await request("/pro/preferences", undefined, a.cookie)).status,
-    ).toBe(403);
-    const claim = await db
-      .prepare("SELECT id FROM membership_claims WHERE user_id=?")
-      .bind(a.id)
-      .first<{ id: string }>();
-    const body = {
-      claimId: claim!.id,
-      eventId: event.message_id,
-      paidThrough: Math.floor(Date.now() / 1000) + 86400,
-      ownershipVerified: true,
-    };
-    expect((await request("/admin/reconcile", body, a.cookie)).status).toBe(
+      (await request("/admin/mock-payment", {}, admin.cookie)).status,
+    ).toBe(410);
+    expect(
+      (
+        await mf.dispatchFetch("http://localhost/api/webhooks/kofi", {
+          method: "POST",
+          body: "{}",
+        })
+      ).status,
+    ).toBe(404);
+    expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
       403,
     );
-    expect((await request("/admin/reconcile", body, admin.cookie)).status).toBe(
-      200,
+    const granted = await request(
+      "/admin/pro-access/grants",
+      { userId: a.id, duration: "7d" },
+      admin.cookie,
     );
-    expect((await request("/admin/reconcile", body, admin.cookie)).status).toBe(
-      400,
-    );
+    expect(granted.status).toBe(200);
     expect(
       (
         await request(
@@ -421,131 +399,17 @@ describe("Worker + real local D1", () => {
       ).status,
     ).toBe(200);
     expect(
-      (
-        await request(
-          "/pro/history",
-          { tool: "case", data: "private" },
-          a.cookie,
-        )
-      ).status,
-    ).toBe(200);
-    const adminPresets = await (
-      await request("/pro/presets", undefined, admin.cookie)
-    ).json();
-    expect(adminPresets).toEqual([]);
+      await (await request("/pro/presets", undefined, admin.cookie)).json(),
+    ).toEqual([]);
     await db
-      .prepare("UPDATE subscriptions SET paid_through=1 WHERE user_id=?")
+      .prepare(
+        "UPDATE pro_grants SET expires_at=2,granted_at=1 WHERE user_id=?",
+      )
       .bind(a.id)
       .run();
     expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
       403,
     );
-    const renewal = {
-      ...event,
-      message_id: "event-renewal",
-      kofi_transaction_id: "transaction-renewal",
-    };
-    expect((await send(renewal)).status).toBe(200);
-    expect(
-      (
-        await request(
-          "/subscription/claim",
-          { transactionId: renewal.kofi_transaction_id },
-          a.cookie,
-        )
-      ).status,
-    ).toBe(200);
-    const renewedClaim = await db
-      .prepare(
-        "SELECT id FROM membership_claims WHERE user_id=? AND transaction_id=?",
-      )
-      .bind(a.id, renewal.kofi_transaction_id)
-      .first<{ id: string }>();
-    const renewedBody = {
-      ...body,
-      claimId: renewedClaim!.id,
-      eventId: renewal.message_id,
-    };
-    expect(
-      (
-        await request(
-          "/admin/reconcile",
-          {
-            ...renewedBody,
-            paidThrough: Math.floor(Date.now() / 1000) + 60 * 86400,
-          },
-          admin.cookie,
-        )
-      ).status,
-    ).toBe(400);
-    const concurrent = await Promise.all([
-      request("/admin/reconcile", renewedBody, admin.cookie),
-      request("/admin/reconcile", renewedBody, admin.cookie),
-    ]);
-    expect(concurrent.filter((r) => r.status === 200)).toHaveLength(1);
-    expect(concurrent.every((r) => [200, 400, 409].includes(r.status))).toBe(
-      true,
-    );
-    expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
-      200,
-    );
-    const renewedSubscription = await db
-      .prepare("SELECT id FROM subscriptions WHERE event_id=?")
-      .bind(renewal.message_id)
-      .first<{ id: string }>();
-    expect(
-      (
-        await request(
-          "/admin/subscriptions/revoke",
-          { id: renewedSubscription!.id, reason: "refund" },
-          admin.cookie,
-        )
-      ).status,
-    ).toBe(200);
-    expect((await request("/pro/presets", undefined, a.cookie)).status).toBe(
-      403,
-    );
-    for (const [suffix, currency, amount] of [
-      ["currency", "USD", "4.99"],
-      ["amount", "AUD", "0.01"],
-    ]) {
-      const unsupported = {
-        ...event,
-        message_id: "unsupported-" + suffix,
-        kofi_transaction_id: "unsupported-" + suffix,
-        currency,
-        amount,
-      };
-      expect((await send(unsupported)).status).toBe(200);
-      expect(
-        (
-          await request(
-            "/subscription/claim",
-            { transactionId: unsupported.kofi_transaction_id },
-            a.cookie,
-          )
-        ).status,
-      ).toBe(200);
-      const pendingClaim = await db
-        .prepare(
-          "SELECT id FROM membership_claims WHERE user_id=? AND transaction_id=?",
-        )
-        .bind(a.id, unsupported.kofi_transaction_id)
-        .first<{ id: string }>();
-      expect(
-        (
-          await request(
-            "/admin/reconcile",
-            {
-              ...body,
-              claimId: pendingClaim!.id,
-              eventId: unsupported.message_id,
-            },
-            admin.cookie,
-          )
-        ).status,
-      ).toBe(400);
-    }
     await db.batch(
       Array.from({ length: 99 }, (_, i) =>
         db

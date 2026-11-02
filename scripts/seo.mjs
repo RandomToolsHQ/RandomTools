@@ -56,7 +56,7 @@ const routes = [
     path: "/pro",
     title: "RandomTools Pro",
     description:
-      "Explore batch processing, saved presets and private workflows. Proposed AUD pricing; live checkout is disabled.",
+      "Explore batch processing, saved presets and private workflows. Pro access is manually approved; payments are disabled.",
   },
   {
     path: "/privacy",

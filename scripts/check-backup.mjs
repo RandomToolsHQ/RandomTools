@@ -39,7 +39,9 @@ await writeFile(
 INSERT INTO user_preferences VALUES('backup-fixture','{"theme":"light","favorites":["json"]}',7);
 INSERT INTO saved_presets VALUES('preset','backup-fixture','workflow','Saved workflow','{"steps":["trim","lower"]}',1);
 INSERT INTO tool_history VALUES('history','backup-fixture','case','Private fixture output',1);
-INSERT INTO auth_identities VALUES('https://backup.clerk.accounts.dev','user_backup','backup-fixture','active',1);`,
+INSERT INTO auth_identities VALUES('https://backup.clerk.accounts.dev','user_backup','backup-fixture','active',1);
+INSERT INTO pro_access_requests(id,user_id,reason,status,created_at,decided_at,decision_id) VALUES('manual-request','backup-fixture','Synthetic backup reason','approved',1,2,'backup-decision');
+INSERT INTO pro_grants(id,user_id,duration,expires_at,granted_at,request_id) VALUES('manual-grant','backup-fixture','permanent',NULL,2,'manual-request');`,
 );
 await run(source, ["execute", "backup-fixture", "--file", fixture]);
 const backup = join(root, "export.sql");
@@ -79,9 +81,18 @@ if (
   throw Error("Restored immutable identity mapping differs");
 if (integrity.some((result) => result.results.length))
   throw Error("Restored foreign keys are invalid");
+const grant = await query(
+  "SELECT duration,expires_at,request_id FROM pro_grants WHERE id='manual-grant'",
+);
+if (
+  grant[0].results[0]?.duration !== "permanent" ||
+  grant[0].results[0]?.expires_at !== null ||
+  grant[0].results[0]?.request_id !== "manual-request"
+)
+  throw Error("Restored manual Pro grant differs");
 await query("DELETE FROM users WHERE id='backup-fixture'");
 const cascades = await query(
-  "SELECT (SELECT count(*) FROM saved_presets)+(SELECT count(*) FROM tool_history)+(SELECT count(*) FROM user_preferences) AS remaining",
+  "SELECT (SELECT count(*) FROM saved_presets)+(SELECT count(*) FROM tool_history)+(SELECT count(*) FROM user_preferences)+(SELECT count(*) FROM pro_access_requests)+(SELECT count(*) FROM pro_grants) AS remaining",
 );
 if (cascades[0].results[0]?.remaining !== 0)
   throw Error("Restored deletion constraints failed");
@@ -94,7 +105,7 @@ if (
 )
   throw Error("Restored identity deletion guard was lost");
 process.stdout.write(
-  "Local Wrangler backup/restore passed: profile, workflow, foreign keys and account deletion.\nSynthetic artifacts: " +
+  "Local Wrangler backup/restore passed: profile, workflow, manual Pro grant, foreign keys and account deletion.\nSynthetic artifacts: " +
     root +
     "\n",
 );

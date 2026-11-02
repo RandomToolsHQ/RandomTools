@@ -1,5 +1,19 @@
 # Cloudflare staging — current deployment
 
+## Pending free-first branch (not deployed)
+
+`codex/manual-pro-access` adds manual Pro requests/grants and hard-disables paid
+flows. Existing hosted deployments still run `ab76f00`-era code; none of the new
+UI, routes or migration has been deployed. Keep this distinction when interpreting
+older hosted payment/entitlement QA evidence below. Local tests use synthetic
+accounts only. See [ADMIN-SETUP.md](ADMIN-SETUP.md) for the new workflow.
+
+A future isolated staging update must apply migration 0004, deploy the matching
+API/frontend together, keep the existing gateway and Clerk subject restrictions,
+then verify anonymous denials, real hosted request/grant/revocation flows and CPU.
+Historical paid subscriptions are not automatically converted into manual grants.
+No production deployment, billing activation or domain purchase is authorized.
+
 Updated 2 November 2026. The owner explicitly chose zero spending and free
 Cloudflare-managed addresses. No purchased domain is needed for this preview.
 

@@ -9,8 +9,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { download } from "./engines";
-import { tools, pricing } from "./catalog";
+import { tools } from "./catalog";
 import ProWorkspace from "./workspace";
+import { ProAccess, AdminProAccess } from "./pro-access";
 export default function Account({ page }: { page: string }) {
   const client = useQueryClient();
   const [params] = useSearchParams();
@@ -194,7 +195,7 @@ export default function Account({ page }: { page: string }) {
         {page === "settings"
           ? "Account settings"
           : page === "subscription"
-            ? "Your membership"
+            ? "Your Pro access"
             : page === "admin"
               ? "Administration"
               : `Hello, ${user.name}.`}
@@ -207,7 +208,7 @@ export default function Account({ page }: { page: string }) {
           Settings
         </Link>
         <Link className="secondary" to="/subscription">
-          Membership
+          Pro access
         </Link>
         {user.role === "admin" && (
           <Link className="secondary" to="/admin">
@@ -330,8 +331,8 @@ export default function Account({ page }: { page: string }) {
           <div className="panel">
             <h2>Delete account</h2>
             <p>
-              Permanently deletes your account, sessions and saved work. This
-              does not cancel payments at Ko-fi.
+              Permanently deletes your account, sessions, saved work and manual
+              Pro access records. Payments are disabled.
             </p>
             <form
               onSubmit={(e) => {
@@ -374,7 +375,7 @@ export default function Account({ page }: { page: string }) {
           </div>
         </div>
       ) : page === "subscription" ? (
-        <Membership action={action} />
+        <ProAccess />
       ) : page === "admin" ? (
         user.role === "admin" ? (
           <Admin action={action} />
@@ -402,73 +403,6 @@ export default function Account({ page }: { page: string }) {
   );
 }
 type Action = (fn: () => Promise<any>) => Promise<any>;
-function Membership({ action }: { action: Action }) {
-  const status = useQuery({
-    queryKey: ["subscription"],
-    queryFn: () => api("/subscription"),
-  });
-  return (
-    <div className="dashboard-grid" style={{ marginTop: 24 }}>
-      <div className="panel">
-        <h2>{status.data?.pro ? "Pro is active" : "Free membership"}</h2>
-        <p>
-          Live checkout is disabled. Proposed Pro pricing: A$
-          {pricing.monthly.toFixed(2)} AUD monthly. Annual purchasing is
-          unavailable.
-        </p>
-        {status.data?.subscriptions?.map((s: any, i: number) => (
-          <p key={i}>
-            Paid through {new Date(s.paid_through * 1000).toLocaleString()} ·{" "}
-            {s.source}
-          </p>
-        ))}
-        <a href="https://ko-fi.com/itzrealfisheryt" className="secondary">
-          View Ko-fi creator page ↗
-        </a>
-        <p>
-          This link does not activate RandomTools checkout. Do not pay for
-          access until the integration has launched.
-        </p>
-      </div>
-      <div className="panel">
-        <h2>Link an existing membership</h2>
-        <p>
-          A transaction ID starts a pending claim. An administrator must
-          independently verify ownership and the authenticated payment before
-          granting access. Email matching alone is never sufficient.
-        </p>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void action(() =>
-              api("/subscription/claim", {
-                transactionId: new FormData(e.currentTarget).get(
-                  "transactionId",
-                ),
-              }),
-            );
-          }}
-        >
-          <label>
-            Ko-fi transaction ID
-            <input
-              name="transactionId"
-              required
-              minLength={3}
-              maxLength={100}
-            />
-          </label>
-          <button className="primary">Submit for verification</button>
-        </form>
-        {status.data?.claims?.map((c: any) => (
-          <p key={c.id}>
-            Claim {c.id.slice(0, 8)} · {c.status}
-          </p>
-        ))}
-      </div>
-    </div>
-  );
-}
 function Admin({ action }: { action: Action }) {
   const [search, setSearch] = useState("");
   const q = useQuery({
@@ -509,57 +443,8 @@ function Admin({ action }: { action: Action }) {
           </div>
         ))}
       </div>
+      <AdminProAccess users={q.data?.users || []} />
       <div className="dashboard-grid" style={{ marginTop: 20 }}>
-        <div className="panel">
-          <h2>Membership reconciliation</h2>
-          <p>
-            Verify ownership through an independent support exchange and
-            receipt. A claimant’s knowledge of an ID is insufficient. Confirm
-            the billing period and AUD amount before setting the expiry.
-          </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const b = Object.fromEntries(new FormData(e.currentTarget));
-              void action(() =>
-                api("/admin/reconcile", {
-                  claimId: b.claimId,
-                  eventId: b.eventId,
-                  paidThrough: Math.floor(
-                    new Date(String(b.paidThrough)).getTime() / 1000,
-                  ),
-                  ownershipVerified: true,
-                }),
-              );
-            }}
-          >
-            <label>
-              Pending claim ID
-              <input name="claimId" required />
-            </label>
-            <label>
-              Authenticated event ID
-              <input name="eventId" required />
-            </label>
-            <label>
-              Confirmed paid-through date
-              <input name="paidThrough" type="datetime-local" required />
-            </label>
-            <label>
-              <input type="checkbox" required /> I independently verified
-              payment ownership and the paid period.
-            </label>
-            <button className="primary">Reconcile membership</button>
-          </form>
-          {!managedAuth && (
-            <button
-              className="secondary"
-              onClick={() => void action(() => api("/admin/mock-payment", {}))}
-            >
-              Create development mock event
-            </button>
-          )}
-        </div>
         <div className="panel">
           <h2>Tool availability</h2>
           <form
@@ -590,51 +475,9 @@ function Admin({ action }: { action: Action }) {
             <button className="secondary">Save availability</button>
           </form>
         </div>
-        <div className="panel">
-          <h2>Subscription overview</h2>
-          {q.data?.subscriptions?.map((s: any) => (
-            <div key={s.id}>
-              <p>
-                {s.user_id} · {s.source}
-                <br />
-                Paid through {new Date(s.paid_through * 1000).toLocaleString()}
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void action(() =>
-                    api("/admin/subscriptions/revoke", {
-                      id: s.id,
-                      reason: new FormData(e.currentTarget).get("reason"),
-                    }),
-                  );
-                }}
-              >
-                <label>
-                  Reason
-                  <select name="reason">
-                    <option value="refund">Refund</option>
-                    <option value="dispute">Dispute</option>
-                    <option value="incorrect-link">Incorrect link</option>
-                    <option value="manual">Manual review</option>
-                  </select>
-                </label>
-                <button className="secondary">Revoke paid period</button>
-              </form>
-            </div>
-          ))}
-        </div>
-        {["events", "claims", "audit", "usage"].map((key) => (
+        {["audit", "usage"].map((key) => (
           <div key={key} className="panel">
-            <h2>
-              {key === "events"
-                ? "Payment events"
-                : key === "claims"
-                  ? "Pending claims"
-                  : key === "audit"
-                    ? "Audit logs"
-                    : "Anonymous usage"}
-            </h2>
+            <h2>{key === "audit" ? "Audit logs" : "Anonymous usage"}</h2>
             <pre>{JSON.stringify(q.data?.[key] || [], null, 2)}</pre>
           </div>
         ))}
