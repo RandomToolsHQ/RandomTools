@@ -1,0 +1,100 @@
+:root {
+  font:
+    16px/1.6 system-ui,
+    sans-serif;
+  color: #e7e9ff;
+  background: #0b1022;
+  color-scheme: dark;
+}
+* {
+  box-sizing: border-box;
+}
+main {
+  max-width: 1000px;
+  padding: 24px;
+  margin: auto;
+}
+h1 {
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.2;
+}
+h2 {
+  font-size: 1.3rem;
+}
+.badge {
+  color: #c6baff;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+}
+.warning {
+  background: #26203c;
+  border: 1px solid #c6baff;
+  border-radius: 14px;
+  padding: 20px;
+}
+label {
+  display: grid;
+  gap: 7px;
+  margin: 16px 0;
+}
+input,
+select,
+button {
+  font: inherit;
+  border: 1px solid #767995;
+  border-radius: 8px;
+  padding: 12px;
+  color: inherit;
+  background: #151c32;
+  max-width: 100%;
+}
+input {
+  width: 100%;
+}
+button {
+  cursor: pointer;
+  background: #493c86;
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+:focus-visible {
+  outline: 3px solid #c9b9ff;
+  outline-offset: 3px;
+}
+.check {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+}
+.check input {
+  width: auto;
+  margin-top: 8px;
+}
+form,
+article {
+  padding: 20px;
+  margin: 20px 0;
+  border: 1px solid #656982;
+  border-radius: 14px;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.filters,
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 20px;
+}
+.url,
+article {
+  overflow-wrap: anywhere;
+}
+p[role="status"] {
+  min-height: 1.6em;
+  color: #d8ceff;
+}

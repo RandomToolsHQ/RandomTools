@@ -18,7 +18,10 @@
     "build:staging": "node scripts/staging.mjs",
     "build:public-staging": "node scripts/public-staging.mjs",
     "preview:pages": "wrangler pages dev dist --port 8790",
-    "check:backup": "node scripts/check-backup.mjs"
+    "check:backup": "node scripts/check-backup.mjs",
+    "vault:build": "tsc --noEmit -p prototype/vault/tsconfig.json && vite build --config prototype/vault/vite.config.ts",
+    "vault:preview": "vite preview --config prototype/vault/vite.config.ts",
+    "test:vault": "playwright test --config playwright.vault.config.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.26.5",

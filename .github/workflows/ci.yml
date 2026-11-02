@@ -21,6 +21,8 @@ jobs:
       - run: npm run test:e2e
       - run: npm run build:public-staging
       - run: npm run test:public
+      - run: npm run vault:build
+      - run: npm run test:vault
       - run: npm run build:staging
         env:
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_cXVpZXQtY2l2ZXQtODc4Mi5jbGVyay5hY2NvdW50cy5kZXYk

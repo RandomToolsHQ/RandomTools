@@ -2,6 +2,18 @@
 
 ## Phase 6 development — 3 November 2026
 
+Free-tool commit c2dfa09 passed complete CI 41465576263 (91 unit/integration
+tests, 64 application browser cases, 48 public-artifact cases, all build/check
+steps). Integration was fast-forwarded to that exact validated source; main
+remains ab76f00. `codex/password-vault-prototype` adds an isolated synthetic-only
+Web Crypto vault, encrypted IndexedDB/CAS, CRUD/search/folders, lock cancellation,
+idle/hidden-tab locking and encrypted backup import/export. Seven additional
+crypto/controller tests and eight local browser cases cover tampering, wrong
+masters, stale writes, storage failure, plaintext persistence, CRUD, import,
+locking, CSP and accessibility. Threat/recovery model: prototype/vault/README.md.
+The application does not import that build; public preparation rejects its
+markers. Prototype CI adds local-only build/browser validation, no deployment.
+
 `codex/phase6-integration` consolidates validated manual Pro baseline 81d73a5;
 baseline CI 41400048660 and integration checklist CI 41462004459 passed.
 `codex/phase6-free-tools` adds three free entries (21 total), advanced password

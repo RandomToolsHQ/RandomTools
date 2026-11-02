@@ -27,12 +27,12 @@ for (const file of await readdir(target + "/assets")) {
   const source = await readFile(target + "/assets/" + file, "utf8");
   if (
     file.startsWith("staging-qa") ||
-    /Private staging verification|clerk\.accounts\.dev|pk_(test|live)_/.test(
+    /Private staging verification|clerk\.accounts\.dev|pk_(test|live)_|Synthetic vault prototype|randomtools-synthetic-vault-v1/.test(
       source,
     )
   )
     throw Error(
-      "Private authentication or QA code entered the public artifact",
+      "Private authentication, QA or experimental vault code entered the public artifact",
     );
 }
 await build({
