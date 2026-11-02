@@ -2,6 +2,17 @@
 
 ## Phase 6 development — 3 November 2026
 
+Free-tool source c2dfa09 passed full CI 41465576263: 91 unit/integration tests,
+64 application browser cases and 48 public-build cases. Integration was
+fast-forwarded to that validated source. Main remains ab76f00. The isolated
+synthetic vault is pushed separately as 05d6a22 on
+`codex/password-vault-prototype`; seven crypto/controller tests and eight local
+browser cases passed. It is not merged into this integration branch or exposed
+as an application route. See docs/LAUNCH-READINESS.md for the reviewed release
+sequence, current production Clerk/domain requirements and remaining CPU gates.
+Read-only Cloudflare checks reconfirmed both direct-upload deployment IDs are
+unchanged and fail closed. No remote D1 migration was applied.
+
 `codex/phase6-integration` consolidates validated manual Pro baseline 81d73a5;
 baseline CI 41400048660 and integration checklist CI 41462004459 passed.
 `codex/phase6-free-tools` adds three free entries (21 total), advanced password

@@ -43,3 +43,55 @@ one genuine ordinary account and its identity/audits were preserved.
 No signup opening, public deployment, main merge, paid service or billing change
 is authorized by this checklist. Keep private gateway and provider protections
 intact while completing these gates.
+
+## Phase 6 validation and release sequence
+
+Free-tool source c2dfa09 is on `codex/phase6-free-tools` and
+`codex/phase6-integration`. CI 41465576263 passed: 91 unit/integration/security
+tests, 64 application browser cases and 48 public-artifact cases, including
+Chromium desktop/mobile, Firefox, WebKit and axe checks. TypeScript, lint,
+Pages/public/private builds, SEO, local D1 backup/restore and Worker dry run
+passed. Eight local private-gateway browser cases also passed. Redacted staged
+secret scanning found no leaks; local credentials remain ignored. No hosted
+account/CPU testing was repeated for these undeployed features.
+
+There are 21 catalog entries on the integration branch; the live public preview
+still has the original 18. Minecraft coverage is deliberately limited and
+source-linked; country/compatibility/ping completeness and Roblox availability
+are deferred. See [FREE-TOOLS.md](FREE-TOOLS.md). The EFF dictionary is lazy-loaded
+only for passphrases. The public entry chunk is about 144 KB gzip; no new package
+dependency was added. Future optimization should use measured user navigation,
+not remove authentication or entitlement checks.
+
+The synthetic-only vault is separate commit 05d6a22 on
+`codex/password-vault-prototype`, not part of this integration branch. Its local
+crypto/controller tests and eight four-target browser cases passed; its own CI
+also builds/tests the separate loopback-only artifact. Threat model and recovery
+limits are in that branch's `prototype/vault/README.md`. Independent review is
+required before real credentials, sync, autofill or any public access.
+
+Fresh read-only checks confirmed unchanged public/private deployment IDs and
+both projects' direct-upload configuration. Git pushes do not deploy these
+projects. Public home returned 200; unauthenticated private origin/API returned
+403 with private/no-store and DENY framing. No hosted migration 0005 was applied.
+
+Recommended release order:
+
+1. Review the integration diff and source/data disclosures; obtain explicit main
+   merge and public-preview deployment approval. Exclude the vault branch.
+2. Back up private D1, apply additive 0005 only to restricted staging, compare old
+   rows and foreign keys, then deploy matching Worker/Pages. Rehearse account
+   favourites/export/deletion with approved synthetic users and remove fixtures.
+3. Deploy only the free-tools public artifact after approval; verify no Clerk,
+   account, Pro/admin or vault bundle is exposed. Keep the private gateway.
+4. Complete cold/write-heavy/max-data CPU evidence, production identity and
+   provider OAuth/email/recovery/deletion rehearsals, backup/incident procedures
+   and operator privacy/accessibility reviews before considering public signup.
+
+Clerk's current [production guide](https://clerk.com/docs/guides/development/deployment/production)
+requires an owned domain/DNS control, production keys and operator-supplied OAuth
+credentials. With no domain purchase authorized, production Clerk signup remains
+blocked; no purchase or provider switch is proposed automatically. Cloudflare's
+current [limits](https://developers.cloudflare.com/workers/platform/limits/)
+still list 10 ms Free CPU per invocation. Three prior passing bounded runs do
+not establish compliance for every representative workload.
