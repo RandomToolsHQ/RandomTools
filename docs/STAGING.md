@@ -1,6 +1,6 @@
 # Cloudflare staging — current deployment
 
-Updated 1 November 2026. The owner explicitly chose zero spending and free
+Updated 2 November 2026. The owner explicitly chose zero spending and free
 Cloudflare-managed addresses. No purchased domain is needed for this preview.
 
 ## Working public preview
@@ -44,9 +44,9 @@ missing configuration denies all testers. Never grant admin/Pro access by email.
 
 Private origin: https://randomtools-web-staging.pages.dev/__staging
 
-The separate private Pages frontend is deployed (`c419710b`), protected by the
+The separate private Pages frontend is deployed (`e69771b4`), protected by the
 owner-approved zero-billing gateway. The API `randomtools-api-staging` is deployed
-as version `1e901dc2-ea9e-4ceb-ad9d-50574fb19322`. Both workers.dev and version
+as version `27b0824d-2150-4050-8251-b316d7683d33`. Both workers.dev and version
 preview URLs are disabled; the frontend uses a service binding. Do not upload
 `staging/dist` to the public tools project or give the public project API bindings.
 
@@ -56,7 +56,8 @@ Wrangler OAuth is complete and stored encrypted with Windows Credential Manager.
 The replacement development backend key is Git-ignored and validated (HTTP 200).
 Worker secrets include CLERK_SECRET_KEY, CLERK_WEBHOOK_SIGNING_SECRET,
 CLERK_TESTER_IDS, RATE_LIMIT_SECRET and the two gateway secrets. Tester subjects
-currently remain deny-all (`[]`) until real registration is verified.
+contain only the explicitly approved, verified tester's immutable Clerk subject.
+Actual tester identifiers remain in secret configuration, outside Git.
 
 Cloudflare Access onboarding required billing authorization and was not activated.
 The approved alternative does not replace Clerk authentication:
@@ -149,7 +150,7 @@ npx.cmd wrangler deploy --config wrangler.staging.toml
 npx.cmd wrangler pages deploy dist --cwd staging --project-name randomtools-web-staging --branch main
 npx.cmd playwright test --config playwright.private.config.ts
 $env:PRIVATE_GATE_CREDENTIAL_FILE = '.wrangler/staging-gate-credentials.json'
-$env:PRIVATE_IMMUTABLE_URL = 'https://c419710b.randomtools-web-staging.pages.dev'
+$env:PRIVATE_IMMUTABLE_URL = 'https://e69771b4.randomtools-web-staging.pages.dev'
 node scripts/check-private-staging.mjs
 ```
 
@@ -182,15 +183,20 @@ hosted Clerk flows or Free-plan CPU compatibility.
    Clerk's required Protect hosts; adding script/frame https://*.protect.clerk.com
    and connect https://*.protect.clerk.com:* resolved the block and exposed the
    remaining registration fields. No protection was disabled or Testing Token
-   used. Supported Google OAuth registration from that valid invitation is being
-   tested. A generic Google sign-in correctly denied uninvited signup.
-2. Verify the registered account's mailbox and immutable Clerk subject; configure
-   CLERK_TESTER_IDS as a JSON array through secure Worker configuration. Unset
-   remains deny-all. Do not publish actual tester identifiers in Git.
+   used. Invited Google OAuth registration succeeded. Clerk's verified primary
+   mailbox and subject were checked before configuring the single-subject API
+   allowlist. A generic Google sign-in correctly denied uninvited signup.
+2. Hosted D1 collision protection denied an existing same-email fixture rather
+   than linking it. Removing only that disposable row allowed normal immutable
+   identity provisioning. A real provider token without the required authorized
+   party was rejected. All 21 real-session free-member checks and 27 Pro storage,
+   retention, export and ownership checks passed. No client role claim granted
+   admin. Temporary test entitlements must be removed at the end of testing.
 3. Verify real account signup/verification,
    recovery, Google/GitHub login, logout/revocation, export and deletion using
-   authorized test accounts. Signed delivery is verified; real account deletion
-   and provider end-to-end checks are not yet done. A second explicitly approved
+   authorized test accounts. Signed delivery and real Google registration are
+   verified; recovery, GitHub and real account deletion are not complete.
+   A second explicitly approved
    identity is needed for real hosted cross-user isolation. Test free-member Pro
    denial before temporary admin promotion (admin intentionally bypasses Pro).
 4. Measure actual hosted Worker CPU for cold/warm requests, concurrency, exports
@@ -204,6 +210,14 @@ authenticated benchmark or a Free-plan pass; investigate the high tail. Worker
 startup time and response latency are not request CPU measurements. Use the
 [official Workers metrics query](https://developers.cloudflare.com/analytics/graphql-api/tutorials/querying-workers-metrics/)
 and check [current runtime limits](https://developers.cloudflare.com/workers/platform/limits/).
+
+See [the CPU investigation](PERFORMANCE.md) for matched hosted comparisons,
+synthetic V8 profiles, preserved security checks and the free-backend fallback.
+An SDK-only optimized repeat still exceeded 10 ms at p99; do not infer production
+readiness from the improved median or a single successful sample. The final
+candidate joins fresh D1 authorization reads and caches no grants, sessions,
+user profiles or entitlement decisions. An additional imported-HMAC-key cache
+experiment did not provide consistent tail headroom and was removed.
 
 ## Future full production
 

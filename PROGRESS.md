@@ -1,5 +1,56 @@
 # RandomTools implementation status
 
+## Phase 3 CPU and security continuation — 2 November 2026
+
+This entry supersedes the unfinished checkpoints below. The existing public
+18-tool deployment remains at the Phase 2 commit and was not redeployed.
+
+- Completed invited Google registration through normal Chrome after correcting
+  Clerk Protect CSP requirements. Verified the primary mailbox and immutable
+  subject before enabling only that tester. No password, code or security
+  challenge was entered by the agent. Development authentication remains gated.
+- Verified hosted same-email collision denial, normal D1 identity provisioning,
+  and rejection of a real provider token lacking the staging authorized party.
+  All 21 actual free-member denial checks passed. All 27 hosted Pro storage,
+  ownership, retention/export and role-injection checks also passed, including a
+  repeat on the joined-read Worker. Browser-engine fixture tests are separate
+  evidence; this does not claim all twelve capabilities were hosted end-to-end.
+- Resumed and reviewed the uncommitted SDK reuse/error handling changes. Added
+  regression tests for credential rotation, per-request session/profile checks,
+  revoked sessions, redacted errors and provider throttling. Reuse only stateless
+  SDK machinery and disable optional backend SDK telemetry; no auth state cache.
+- Combined two existing-user D1 reads into one fresh LEFT JOIN, preserving
+  deleted/deleting tombstones, disabled-account denial, ownership and role state.
+  Provisioning retains collision-safe writes and a final authorization read.
+  An imported-HMAC-key-cache experiment did not consistently improve the tail and
+  was removed. The existing gateway key/grant verification remains unchanged.
+- All 62 unit/integration tests, 48 local account/Pro/admin/browser cases, 40 local
+  public-artifact cases, eight hosted gateway/accessibility cases, typecheck,
+  lint, backup/restore and the private/public builds passed. Public builds reject
+  accidental private QA/auth code. Full GitHub CI will validate the final commit.
+- Added reproducible synthetic V8 profiling and read-only hosted CPU scripts.
+  Profiles retain 400 provider session/profile checks per 400 requests and show
+  D1 reads dropping from 800 to 400. Local times are not Cloudflare CPU evidence.
+- Controlled hosted comparisons use 20 sequential reads and 100 reads at
+  concurrency five, with pacing below Clerk development limits. The matched
+  original path still measured 11.242 ms median / 48.359 ms p99. SDK-only samples
+  improved to 4.898 / 7.244 ms, but a repeat reached 5.108 / 11.938 ms. The joined
+  candidate with ten 2 KB presets and ten 1 KB history records measured
+  4.117 / 10.476 ms. All paced browser requests succeeded; reliable 10 ms tail
+  compliance is not established from those samples. The discarded crypto-cache
+  experiment reached 4.071 / 11.146 ms. Retained improvements do not establish
+  reliable Free-plan tail headroom; see [the performance report](docs/PERFORMANCE.md).
+- The old caught HTTP 500 was not a Cloudflare CPU-exhaustion termination. Its
+  original provider exception was not retained, so Clerk throttling remains an
+  inference. New dependency failures return safe 503/Retry-After responses and
+  log only status codes. A sanitized partial tail captured no failures in the
+  first optimized workload; raw headers/tokens were not retained.
+- Documented a Supabase Free backend alternative if tail headroom remains
+  insufficient, including explicit migration approval and immediate revocation
+  requirements. No new provider account, paid service, billing obligation or
+  live payment was enabled. Temporary fixtures/entitlements are being cleaned up
+  after the remaining hosted checks.
+
 ## Phase 3 private staging — 1 November 2026 (in progress)
 
 - Resumed the existing work on `codex/phase3-private-staging`; the public preview

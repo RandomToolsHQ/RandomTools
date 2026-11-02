@@ -922,7 +922,13 @@ export default {
           : e instanceof HttpError ||
               e instanceof AuthError ||
               e instanceof AccessError
-            ? json({ error: e.message }, e.status)
+            ? json(
+                { error: e.message },
+                e.status,
+                e instanceof AuthError && e.retryAfter
+                  ? { "Retry-After": String(e.retryAfter) }
+                  : {},
+              )
             : e instanceof z.ZodError || e instanceof SyntaxError
               ? json({ error: "Invalid input" }, 400)
               : json({ error: "An unexpected error occurred" }, 500);

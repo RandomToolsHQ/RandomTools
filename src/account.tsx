@@ -168,9 +168,10 @@ export default function Account({ page }: { page: string }) {
     return (
       <section className="form-page">
         <h1>Your workspace awaits.</h1>
-        <p>
+        <p role={me.error ? "alert" : undefined}>
           {me.error
-            ? "Your account could not be loaded. Please try again."
+            ? me.error.message ||
+              "Your account could not be loaded. Please try again."
             : "Sign in to access your account."}
         </p>
         {me.error && (

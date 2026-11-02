@@ -35,6 +35,10 @@ import { api } from "./api";
 import "./style.css";
 const ToolPage = lazy(() => import("./ToolPage"));
 const Account = /* @__PURE__ */ lazy(() => import("./account"));
+const StagingQA =
+  import.meta.env.VITE_DEPLOYMENT_STAGE === "staging" && !publicToolsOnly
+    ? lazy(() => import("./staging-qa"))
+    : null;
 function ToolRoute() {
   const { id } = useParams();
   return <ToolPage key={id} />;
@@ -217,6 +221,7 @@ function App() {
         )}
         <Suspense fallback={<p className="loading">Loading your workspace…</p>}>
           <Routes>
+            {StagingQA && <Route path="/__qa" element={<StagingQA />} />}
             <Route path="/" element={<Directory home />} />
             <Route path="/tools" element={<Directory />} />
             <Route path="/tools/:id" element={<ToolRoute />} />

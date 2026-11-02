@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cp, mkdir, readFile, writeFile, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, writeFile, rm, readdir } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import process from "node:process";
 import { build } from "esbuild";
@@ -22,6 +22,19 @@ if (dirname(target) !== resolve("public-staging"))
 await rm(target, { recursive: true, force: true });
 await mkdir(target, { recursive: true });
 await cp("dist", target, { recursive: true });
+for (const file of await readdir(target + "/assets")) {
+  if (!file.endsWith(".js")) continue;
+  const source = await readFile(target + "/assets/" + file, "utf8");
+  if (
+    file.startsWith("staging-qa") ||
+    /Private staging verification|clerk\.accounts\.dev|pk_(test|live)_/.test(
+      source,
+    )
+  )
+    throw Error(
+      "Private authentication or QA code entered the public artifact",
+    );
+}
 await build({
   entryPoints: ["public-staging/guard.ts"],
   outfile: target + "/_worker.js",

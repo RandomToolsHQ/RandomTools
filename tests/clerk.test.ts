@@ -9,7 +9,13 @@ import {
 } from "vitest";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 import { readFile, readdir } from "node:fs/promises";
-import { managedCurrent, deleteManaged, managedWebhook } from "../worker/clerk";
+import {
+  managedCurrent,
+  deleteManaged,
+  managedWebhook,
+  clerkClient,
+} from "../worker/clerk";
+import { createClerkClient } from "@clerk/backend";
 import worker from "../worker/index";
 const mock = vi.hoisted(() => ({
   authenticateRequest: vi.fn(),
@@ -45,6 +51,43 @@ const req = () =>
   new Request(origin + "/api/me", {
     headers: { authorization: "Bearer synthetic-fixture" },
   });
+it("reuses only SDK machinery, replaces it on credential rotation and keeps the production guard", () => {
+  const config = { ...env, CLERK_ISSUER: issuer + "/" + subject };
+  const first = clerkClient(config);
+  expect(clerkClient(config)).toBe(first);
+  expect(createClerkClient).toHaveBeenCalledTimes(1);
+  expect(
+    clerkClient({
+      ...config,
+      CLERK_SECRET_KEY: config.CLERK_SECRET_KEY + "rotated",
+    }),
+  ).not.toBe(first);
+  expect(createClerkClient).toHaveBeenCalledTimes(2);
+  expect(() => clerkClient({ ...config, ENVIRONMENT: "production" })).toThrow(
+    "Production authentication requires live Clerk configuration",
+  );
+});
+it("rechecks provider state on each request and fails closed with a safe retry hint on throttling", async () => {
+  await managedCurrent(req(), env);
+  await managedCurrent(req(), env);
+  expect(mock.getSession).toHaveBeenCalledTimes(2);
+  expect(mock.getUser).toHaveBeenCalledTimes(2);
+  mock.getSession.mockRejectedValueOnce({
+    status: 429,
+    message: "private provider details",
+  });
+  const response = await worker.fetch(req(), env);
+  expect(response.status).toBe(503);
+  expect(response.headers.get("Retry-After")).toBe("10");
+  expect(await response.text()).not.toContain("private provider details");
+  expect(mock.getUser).toHaveBeenCalledTimes(2);
+  mock.getSession.mockResolvedValueOnce({
+    status: "revoked",
+    userId: subject,
+    expireAt: Date.now() + 60000,
+  });
+  expect((await worker.fetch(req(), env)).status).toBe(401);
+});
 it("rejects a gateway identity mismatch before provisioning any D1 account", async () => {
   await expect(
     managedCurrent(req(), env, "different@example.test"),
@@ -505,7 +548,7 @@ describe("managed Clerk identity with real isolated D1", () => {
     await expect(managedCurrent(req(), env)).rejects.toThrow("disabled");
     mock.getSession.mockRejectedValueOnce(Error("private provider details"));
     const response = await worker.fetch(req(), env);
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(503);
     expect(await response.text()).not.toContain("private provider");
   });
   it("verifies deletion webhooks and applies duplicate events idempotently", async () => {
