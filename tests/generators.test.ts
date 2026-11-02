@@ -132,6 +132,20 @@ describe("local generators", () => {
   });
 });
 describe("honest public server lookup", () => {
+  it("reads Bedrock version.name while preferring cleaned Java names and tolerating missing versions", () => {
+    expect(
+      parseServerStatus({ online: true, version: { name: "1.19.70" } }).version,
+    ).toBe("1.19.70");
+    expect(
+      parseServerStatus({
+        online: true,
+        version: { name: "raw", name_clean: "clean" },
+      }).version,
+    ).toBe("clean");
+    expect(
+      parseServerStatus({ online: true, version: { name: null } }).version,
+    ).toBeUndefined();
+  });
   it("rejects URLs, local addresses, ports and unsafe provider responses", () => {
     for (const value of [
       "https://example.org",

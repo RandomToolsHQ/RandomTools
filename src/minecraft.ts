@@ -87,7 +87,11 @@ export function parseServerStatus(data: unknown): ServerStatus {
   const integer = (n: unknown) =>
     typeof n === "number" && Number.isSafeInteger(n) && n >= 0 ? n : undefined;
   const version =
-    typeof d.version === "string" ? d.version : d.version?.name_clean;
+    typeof d.version === "string"
+      ? d.version
+      : typeof d.version?.name_clean === "string"
+        ? d.version.name_clean
+        : d.version?.name;
   return {
     online: d.online,
     players: integer(d.players?.online),
