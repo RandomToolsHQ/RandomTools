@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import process from "node:process";
 import console from "node:console";
+import { resolve, relative, isAbsolute } from "node:path";
 /* global fetch */
 
 // Read-only analytics. OAuth stays in memory; no request bodies/identities logged.
@@ -57,8 +58,11 @@ const report = {
   limitation:
     "Aggregated invocations, potentially sampled and across versions. Runtime errors do not count caught HTTP 500/503 responses; cross-check the browser workload report. This does not establish authenticated Free-plan compatibility.",
 };
-await writeFile(
-  ".wrangler/phase3-cpu-latest.json",
-  JSON.stringify(report, null, 2),
+const output = resolve(
+  process.env.WORKER_CPU_OUTPUT || ".wrangler/phase3-cpu-latest.json",
 );
+const within = relative(resolve(".wrangler"), output);
+if (within.startsWith("..") || isAbsolute(within) || !within.endsWith(".json"))
+  throw Error("CPU evidence must be saved as JSON under ignored .wrangler");
+await writeFile(output, JSON.stringify(report, null, 2));
 console.log(JSON.stringify(report, null, 2));

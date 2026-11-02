@@ -1,18 +1,36 @@
 # Cloudflare staging — current deployment
 
-## Pending free-first branch (not deployed)
+## Current free-first restricted staging
 
-`codex/manual-pro-access` adds manual Pro requests/grants and hard-disables paid
-flows. Existing hosted deployments still run `ab76f00`-era code; none of the new
-UI, routes or migration has been deployed. Keep this distinction when interpreting
-older hosted payment/entitlement QA evidence below. Local tests use synthetic
-accounts only. See [ADMIN-SETUP.md](ADMIN-SETUP.md) for the new workflow.
+Application source `cc98ed9` from `codex/manual-pro-access` is deployed to the
+existing restricted API/frontend with additive migration 0004. Runtime deployment:
+`a6bb68f5-c199-447f-8fa5-3b4dcdae2aa5` (100%); private Pages deployment:
+`b27c6262-bde5-45a6-b338-a3ce0648dfd8`. The public free-tools deployment was not
+changed. Both Pages environments fail closed; direct Worker URLs are disabled.
 
-A future isolated staging update must apply migration 0004, deploy the matching
-API/frontend together, keep the existing gateway and Clerk subject restrictions,
-then verify anonymous denials, real hosted request/grant/revocation flows and CPU.
-Historical paid subscriptions are not automatically converted into manual grants.
-No production deployment, billing activation or domain purchase is authorized.
+54 real hosted API/security checks, eight real desktop/mobile form checks and a
+revoked-but-unexpired Clerk JWT check passed using three disposable synthetic
+accounts. Registration/password/OAuth onboarding is separate evidence. Synthetic
+accounts, identities, roles, entitlements and tester entries were removed; the
+genuine account, original identity and original audit records were preserved.
+The only remaining allowed Clerk subject/gateway tester is the original approved
+tester. That account has no temporary admin role or Pro grant.
+
+Three 121-request populated-workspace runs returned only HTTP 200, with CPU p99
+7.817/8.671/7.764 ms and zero recorded runtime errors. See [PERFORMANCE.md](PERFORMANCE.md)
+for pacing, adaptive counts and limitations; do not infer unrestricted production
+readiness from these samples. Payments remain hard-disabled.
+
+Before migration, an ignored local backup was saved under `.wrangler/manual-pro-hosted`
+with user/SYSTEM-only ACLs. Migration 0004 creates only two new tables and indexes.
+Rollback can restore old API `a30f8ebf-bac9-42fc-9eb9-b9206829e0e1` and old Pages
+`1a09193f-5228-46eb-89c9-9071792b4f67`, retaining additive tables and all data.
+Do not automatically DROP the new tables or restore an old backup over genuine
+new requests. Future schema rollback requires a separate reviewed data plan.
+
+Keep the gateway, exact origin, Clerk allowlist, live session/profile verification
+and disabled payments intact for every future staging update. See ADMIN-SETUP.md.
+No public production deployment, billing activation or domain purchase occurred.
 
 Updated 2 November 2026. The owner explicitly chose zero spending and free
 Cloudflare-managed addresses. No purchased domain is needed for this preview.
@@ -164,7 +182,7 @@ npx.cmd wrangler deploy --config wrangler.staging.toml
 npx.cmd wrangler pages deploy dist --cwd staging --project-name randomtools-web-staging --branch main
 npx.cmd playwright test --config playwright.private.config.ts
 $env:PRIVATE_GATE_CREDENTIAL_FILE = '.wrangler/staging-gate-credentials.json'
-$env:PRIVATE_IMMUTABLE_URL = 'https://1a09193f.randomtools-web-staging.pages.dev'
+$env:PRIVATE_IMMUTABLE_URL = 'https://b27c6262.randomtools-web-staging.pages.dev'
 node scripts/check-private-staging.mjs
 ```
 

@@ -33,6 +33,8 @@ test("direct account navigation returns to the gateway and API/assets stay denie
     "/api/me",
     "/api/admin",
     "/api/pro/presets",
+    "/api/pro-access",
+    "/api/admin/pro-access",
     "/assets/private.js",
   ]) {
     const response = await request.get(path);

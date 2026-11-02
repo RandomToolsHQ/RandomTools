@@ -19,6 +19,9 @@ for (const path of [
   "/api/me",
   "/api/admin",
   "/api/pro/presets",
+  "/api/pro-access",
+  "/api/pro-access/requests",
+  "/api/admin/pro-access",
   "/api/webhooks/kofi",
 ]) {
   const response = await fetch(origin + path, { redirect: "manual" });
@@ -88,7 +91,12 @@ if (process.env.PRIVATE_GATE_CREDENTIAL_FILE) {
     response.status === 200 && me.user === null && me.pro === false,
     response.status,
   );
-  for (const path of ["/api/admin", "/api/pro/presets"]) {
+  for (const path of [
+    "/api/admin",
+    "/api/pro/presets",
+    "/api/pro-access",
+    "/api/admin/pro-access",
+  ]) {
     const response = await fetch(origin + path, { headers: { cookie } });
     check("Clerk required: " + path, response.status === 401, response.status);
   }
@@ -97,7 +105,7 @@ if (process.env.PRIVATE_GATE_CREDENTIAL_FILE) {
     headers: { cookie },
     body: "{}",
   });
-  check("live payments disabled", payment.status === 503, payment.status);
+  check("live payments disabled", payment.status === 404, payment.status);
   if (process.env.PRIVATE_IMMUTABLE_URL) {
     const immutable = new URL(process.env.PRIVATE_IMMUTABLE_URL);
     if (

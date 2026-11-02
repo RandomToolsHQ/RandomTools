@@ -1,5 +1,63 @@
 # Private authenticated Worker CPU investigation
 
+## Manual Pro hosted follow-up — 2 November 2026
+
+Source `cc98ed9`, measured API version `0be9322a-266c-4acf-85c0-d93ed5e2e9f5`.
+Final cleanup restored the original tester secrets, producing API version
+`a6bb68f5-c199-447f-8fa5-3b4dcdae2aa5` with the same application code. No public
+Worker URL, paid service or production authentication was enabled.
+
+Three synthetic Clerk accounts were administratively provisioned in the existing
+development instance and signed in through the normal Clerk SDK with 60-second,
+single-use sign-in tickets. No Testing Tokens or security protection bypass was
+used. Sessions/JWTs were real, exact issuer/authorized-party and live provider
+session/profile checks remained enabled, and roles/manual grants came from D1.
+These are not registration/recovery/OAuth onboarding tests.
+
+The member workspace held 11 presets (ten with 2 KB payloads) and ten 1 KB history
+entries. Each run used one initial /me, 20 sequential /me reads and 100 mixed reads
+at concurrency five, with 1.5-second gaps between batches and an additional 450 ms
+per call. Paths: /me, /subscription, /pro/preferences, /pro/presets, /pro/history,
+/account/export. Normal short-lived tokens refreshed through Clerk's SDK; no
+expiry or revocation checks were removed. No overlapping fixture mutations/UI
+navigation occurred during the measurement windows. Any non-200 stopped the run.
+
+| Run | Observed HTTP | Analytics count | CPU p50 ms | p95 ms | p99 ms | Runtime errors |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 121/121 200 | 116 | 4.295 | 7.231 | 7.817 | 0 |
+| 2 | 121/121 200 | 120 | 4.279 | 6.493 | 8.671 | 0 |
+| 3 | 121/121 200 | 127 | 4.506 | 6.802 | 7.764 | 0 |
+
+Cloudflare adaptive analytics used timestamp windows padded by one second;
+microseconds were converted to milliseconds. Counts are sampled/estimated and
+differ from browser-observed counts. All groups had success outcome. No Clerk
+503/throttling or HTTP failures occurred in these 363 requests. One analytics
+query failed transiently and succeeded on retry; that was not a Worker failure.
+Browser end-to-end medians were 576.5/577.5/593.5 ms, p99 685.9/671.4/674.2 ms,
+including normal token acquisition/response parsing and excluding pacing sleeps.
+Those latency values are not CPU measurements.
+
+The observed p99 values fit 10 ms for these bounded read workloads. They do not
+prove cold starts, maximum-size exports, write-heavy requests, cleanup or heavier
+production load fit Free. Earlier occasional higher tails below remain relevant;
+do not declare general Free-plan or production readiness. No new speculative
+optimization or authorization cache was introduced.
+
+54 functional/security checks passed (including server durations, real elapsed
+expiry, direct grants, permanent revocation, post-admin-removal denial and expected
+audits), plus eight real desktop/mobile form checks. A genuine unexpired JWT was
+rejected with 401 after provider session revocation. Expiry was observed by
+shortening only the exact disposable grant deadline, never changing the global
+clock or genuine data. All three synthetic provider/D1 identities and access
+grants were removed; original data and audit entries were preserved.
+
+To keep evidence separate, `WORKER_CPU_OUTPUT` may select another JSON file under
+ignored `.wrangler`; paths outside that directory are rejected. Raw sessions,
+provider responses and fixture keys are local/ignored and are removed after use;
+only sanitized results and owner-protected pre-migration backup are retained.
+
+## Earlier investigation
+
 Updated 2 November 2026. All hosted requests below used the existing restricted
 Cloudflare staging origin, the approved real Clerk account and its normal browser
 session. The public free-tools deployment was unchanged. No plan, billing or

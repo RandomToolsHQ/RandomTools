@@ -1,5 +1,57 @@
 # RandomTools implementation status
 
+## Restricted hosted manual Pro validation — 2 November 2026
+
+This supersedes the pending-deployment notes below. Application source `cc98ed9`
+is now deployed only to the existing private staging origin. Public Pages remains
+unchanged at deployment `d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34`.
+
+- Verified Wrangler OAuth, ignored/valid development Clerk key, private gateway,
+  service bindings, disabled Worker public URLs, fail-closed Pages and payments off.
+  Saved an ignored local pre-migration backup in a user/SYSTEM-only directory.
+- Applied additive migration 0004: no old table/row was changed. All 15 original
+  application tables matched before/after migration, with zero FK violations.
+  Safe application rollback restores prior Worker/Pages versions and retains the
+  additive tables; do not drop tables containing genuine requests or grants.
+- Three explicitly synthetic Clerk accounts used normal SDK sessions redeemed
+  with short-lived single-use provider sign-in tickets. No Testing Tokens, password
+  weakening, CAPTCHA bypass or public signup change was used. This tests real
+  signed sessions/live checks, not registration, recovery or OAuth enrollment.
+- All 54 hosted API/security checks passed: request/duplicate/status/injection,
+  denial/approval, direct grants, exact 7/30-day durations, permanent/revoked access,
+  real elapsed expiry, cross-user isolation, disabled payments and post-admin-role
+  removal denial. Only the exact synthetic grant deadline was shortened to observe
+  expiry; no global clock or genuine entitlement was changed.
+- Eight additional real desktop/mobile UI checks passed, including submitting,
+  denying, approving, directly granting permanent access and revoking through the
+  actual hosted forms. An actual revoked Clerk session with an unexpired JWT
+  returned 401. Successful administrative changes produced 14 expected audit
+  events, plus four user request submissions; original audit entries were retained.
+- Three populated-workspace workloads each returned 121/121 HTTP 200, paced below
+  Clerk development limits. Cloudflare CPU p50/p95/p99 ms: 4.295/7.231/7.817,
+  4.279/6.493/8.671, 4.506/6.802/7.764. Adaptive counts were 116/120/127; recorded
+  runtime errors were zero. These bounded warm/read samples do not establish cold,
+  maximum-export or unrestricted-load Free-plan reliability. See PERFORMANCE.md.
+- Removed all synthetic accounts/data, temporary roles/grants and tester entries.
+  Verified one genuine account/identity, zero admins/grants/requests and no FK
+  violations. Thirteen original data tables and all eight original audit rows
+  remained unchanged. Three obsolete synthetic gateway cookies were denied.
+- Final API version `a6bb68f5-c199-447f-8fa5-3b4dcdae2aa5` serves 100%; private
+  Pages deployment `b27c6262-bde5-45a6-b338-a3ce0648dfd8`. Worker URLs remain disabled;
+  production/preview fail_open remain false. The canonical private main deployment
+  is still development staging, not a public production authentication service.
+- Typecheck, lint and all 83 local tests passed again. Hosted private gateway/
+  accessibility browser checks passed in all four projects, and expanded HTTP
+  smoke checks passed 33/33. Corrected the old payment smoke expectation to 404
+  and added manual-route denial checks. CPU evidence can now use a separate
+  ignored output path without overwriting prior investigations. Full CI validates
+  the follow-up commit; it does not deploy.
+
+Remaining public-signup gates: production Clerk/domain requirements, complete
+registration/recovery/OAuth/deletion coverage, broader abuse/security review and
+cold/heavier/max-data CPU tests. No public deployment, genuine-data migration,
+domain purchase, billing change, paid service or live payment activation occurred.
+
 ## Free-first roadmap and manual Pro access — 2 November 2026
 
 Developed independently on `codex/manual-pro-access`, based on validated
