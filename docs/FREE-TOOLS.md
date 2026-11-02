@@ -1,4 +1,4 @@
-# Free tools expansion (development only)
+# Free tools expansion — restricted staging and public candidate
 
 The branch adds three catalog entries (21 total) and replaces the password UI
 with an advanced local generator. No deployment or main merge is included.
@@ -57,4 +57,7 @@ Staging deployment must first back up D1, apply 0005, verify old rows unchanged
 and foreign keys, then deploy the matching API/frontend behind the gateway.
 Safe application rollback keeps the additive table. Dropping the table is
 destructive: first export it and obtain explicit approval if it has user data.
-No hosted migration is applied by CI or this development phase.
+CI never applies remote migrations. Phase 7 separately applied 0005 only to the
+existing restricted staging database after a verified backup/restore. Hosted
+favourite ownership/export/deletion checks passed and synthetic rows were removed.
+The public artifact has no D1 binding or account access and remains undeployed.

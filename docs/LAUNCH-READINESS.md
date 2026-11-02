@@ -1,5 +1,34 @@
 # Launch readiness — 3 November 2026
 
+## Phase 7 release decision
+
+Restricted acceptance is complete for application source a04a522. The public-only
+21-tool candidate is prepared and remains undeployed pending explicit approval.
+Manifest SHA256: 41e903db978d3ab79af68175bc05af8fa99cc4270d52a23b714ea94428ba7bc9
+(51 files; 27 public pages plus closed account placeholders/assets/denial guard).
+Upload would target the existing randomtools-preview Pages project on its main
+production branch, retaining pages.dev, noindex and the API-denial guard. It does
+not merge Git main, expose Clerk/accounts/Pro/admin/vault, bind D1, enable payments
+or change restricted staging. Current public deployment is retained for rollback.
+
+Source CI 41478963634 passed; 93 unit/integration, 68 application-browser and 52
+public-artifact cases passed, plus eight local private-gateway cases. Restricted
+hosted evidence: 92 feature/security checks, actual revoked-JWT 401, 21 final gate /
+cleanup/Bedrock fixture checks, 847/847 successful bounded workload requests.
+All synthetic accounts/privileges removed; original account/identity/data/audits
+preserved. Migration 0005 was additive, backed up/restored/verified, private only.
+An operational secret-activation issue required a fail-closed binding reset and
+explicit Worker version deployment; verify actual retired-key rejection rather
+than trusting secret-write success. See STAGING.md and PROGRESS.md for exact IDs.
+
+The approved release can cover free browser tools independently of the SaaS.
+Public authenticated launch remains blocked by CPU tail reliability, production
+Clerk/domain/OAuth/email/recovery/deletion rehearsals and the operator/recovery
+gates below. Candidate p99 occasionally exceeds 10 ms; no consistent regression
+was observed against the prior backend, but this is not Free-plan compliance
+proof. Minecraft metadata remains curated/limited and Roblox availability is not
+checked. The vault remains separate and requires independent security review.
+
 ## Verified baseline
 
 Integration branch `codex/phase6-integration` starts at `81d73a5`, containing

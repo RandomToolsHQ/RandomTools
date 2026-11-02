@@ -1,6 +1,59 @@
 # Cloudflare staging — current deployment
 
-## Current free-first restricted staging
+## Phase 7 — current restricted staging, 3 November 2026
+
+Validated application source `a04a522` is deployed only to
+https://randomtools-web-staging.pages.dev. Worker version
+`876ed2a4-b1c7-4d36-a6d5-6633cdfc51a1` receives 100%; private Pages deployment is
+`3c60091c-ad13-4ebd-9263-159c46d06890`. Public Pages remains
+`d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34` (18 tools). No main merge/public update.
+
+Before applying additive migration 0005, a remote D1 export was restored into an
+isolated local database: all 18 old tables matched, with zero FK violations.
+The backup/restore/snapshots inherit user/SYSTEM-only ACLs under ignored
+`.wrangler/phase7`. Capture Wrangler export output privately: it can print a
+temporary signed backup-download URL. Never print SQL contents or that URL.
+Migration preserved all 17 old application tables and adds server_favourites.
+Application rollback retains the new table; do not restore an old backup over
+new data or drop a populated table without separate approval.
+
+92 hosted feature/security/manual-Pro checks passed using three disposable Clerk
+accounts and short-lived named gateway keys. SDK single-use sign-in tickets were
+used for synthetic sessions, not Testing Tokens or enrollment/security bypasses.
+Hosted checks cover desktop/mobile tools, real favourite persistence/ownership,
+exports, Pro requests/decisions/grants/expiry/revocation and administrative audit
+events. A live opt-in Java status request succeeded; the final Bedrock UI check
+uses the documented provider schema fixture. Its version.name parsing bug is
+fixed in a04a522. These checks do not prove production signup/recovery/OAuth.
+
+All 847 bounded authenticated measurement requests succeeded. CPU remains a
+launch gate: one initial p99 was 10.388 ms; matched prior/candidate deployments
+also exceeded 10 ms occasionally. See PERFORMANCE.md for all seven windows.
+
+Teardown preserved 15 non-operational old tables exactly and all original audit
+records. One genuine ordinary account/identity remains; all three synthetic
+Clerk accounts/identities, requests, grants and favourites are removed. A real
+revoked-but-unexpired Clerk JWT was denied with 401. Original tester only remains.
+Seven temporary key/session files were removed. Backups are deliberately retained.
+
+Operational finding: secret-write/deploy success was insufficient evidence of
+active revocation. Retired keys initially remained accepted. We removed the Pages
+tester binding, deployed and observed fail-closed 503, then recreated the original
+tester-only binding. For the Worker we uploaded clean source, used versions secret
+bulk, and explicitly deployed that resulting version at 100%. Cloudflare 10215
+after a rollback requires version-aware secret operations; do not assume the
+latest uploaded version is the active version. Final checks proved all three
+unexpired retired keys denied, original gateway login successful, gateway-only
+account access denied, and anonymous routes protected. Temporary count-only
+diagnostics were removed from source, artifacts and runtime. Record this evidence
+before discarding temporary credentials; control-plane state alone is insufficient.
+
+21 final hosted checks passed. Both Pages environments fail closed, direct Worker
+and preview URLs remain disabled, and payments remain off. Public release requires
+explicit approval for the separately frozen public-only artifact; no Clerk,
+account, Pro/admin or vault functionality is included in it.
+
+## Prior manual-Pro deployment (superseded)
 
 Application source `cc98ed9` from `codex/manual-pro-access` is deployed to the
 existing restricted API/frontend with additive migration 0004. Runtime deployment:

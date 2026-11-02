@@ -121,6 +121,45 @@ provide consistent tail headroom and was removed. The retained SDK/D1 optimizati
 substantially improves CPU, but does not reliably meet the 10 ms p99 target. Keep
 accounts restricted; do not launch the authenticated SaaS on this evidence.
 
+## Phase 7 bounded hosted comparison — 3 November 2026
+
+Seven isolated windows each executed 121 authenticated requests: 21 /me reads,
+then 20 batches of five across /me, /subscription, /pro/preferences, /pro/presets,
+/pro/history and /account/export. Batches wait 1.5 seconds; each call waits another
+450 ms after completion. Data included 11 presets and ten history records.
+All 847 requests returned 200; no runtime errors were recorded in the corresponding
+adaptive analytics groups. No authenticated API 429/503 was observed. Frontend
+provider retries were not separately instrumented; do not infer absence of all
+provider throttling. No session checks or authorization caches were weakened.
+
+| Window | Version group | CPU p50 ms | p95 ms | p99 ms | Adaptive request estimate |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Initial 1 | Candidate | 5.475 | 9.558 | 10.388 | 118 |
+| Initial 2 | Candidate | 5.004 | 8.793 | 9.418 | 110 |
+| Initial 3 | Candidate | 5.131 | 8.011 | 9.164 | 121 |
+| Matched 1 | Prior source 81d73a5 | 5.064 | 8.791 | 10.204 | 120 |
+| Matched 2 | Candidate | 3.441 | 5.934 | 6.968 | 115 |
+| Matched 3 | Prior source 81d73a5 | 3.264 | 5.178 | 19.760 | 135 |
+| Matched 4 | Candidate | 5.079 | 9.253 | 10.132 | 116 |
+
+Control-plane version rollouts bracketed matched runs and the same synthetic
+data/pacing were retained. Candidate backend code is unchanged from 39668c9;
+a04a522 changes only client Bedrock parsing/tests. Analytics is aggregate and
+adaptive, so weighted estimates differ from the exact browser request count and
+are not per-request traces or runtime version attestation. One transient GraphQL
+failure recovered on bounded retry. Initial browser timing includes token
+retrieval; matched timing starts after token retrieval, so do not compare those
+latencies across groups. Median fetch latency within the matched runs was
+619.3/608.8/606.4/634.9 ms; p99 1273.3/1223.8/2973.5/853.1 ms.
+
+No consistent candidate regression was observed in these bounded samples;
+this is not statistical proof of equivalence or reliable Free-plan compliance.
+Both prior and candidate tails sometimes exceed 10 ms. Cold, maximum-data,
+write-heavy and production workloads remain unproven. Stop speculative tuning;
+keep accounts restricted. The public free-tools artifact has no authenticated
+API and can be considered separately after approval. The final clean candidate
+and original-only tester configuration were restored after comparison/cleanup.
+
 ## CPU profiles and error diagnosis
 
 Run `node scripts/profile-auth.mjs` locally. It uses generated RSA fixtures and

@@ -1,5 +1,55 @@
 # RandomTools implementation status
 
+## Phase 7 — restricted acceptance and public candidate, 3 November 2026
+
+Branch `codex/phase7-release-candidate` continues validated Phase 6 source 39668c9.
+Vault branch excluded; main remains ab76f00. Follow-ups: 68e0832 waits for fonts /
+two paint frames before contrast snapshots; a04a522 fixes documented Bedrock
+version.name parsing. Full source CI 41478963634 passed: 93 unit/integration,
+68 app-browser and 52 public-artifact cases, TypeScript, lint, backup/restore,
+builds, SEO and dry run. Eight local private-gateway cases also passed.
+
+Before remote migration 0005, the D1 export was restored locally with all 18 old
+tables equal and no FK errors. Applying the additive migration preserved all
+17 old application tables. Final cleanup confirms 15 non-operational old tables
+unchanged and all original audits retained: one genuine ordinary account and
+one identity remain, zero admins/grants/requests/favourites, no FK violations.
+Backups/snapshots remain ignored and user/SYSTEM-only. No genuine-user mutation.
+
+92 hosted checks passed using three disposable Clerk accounts, normal supported
+SDK ticket sessions and expiring named gateway keys. Real desktop/mobile flows
+cover free generators/downloads, recent tools, favourite persistence/ownership /
+export, Pro requests/decisions/direct grants/expiry/revocation and admin audits.
+Live opt-in Java status succeeded. A final hosted provider-schema fixture verifies
+the Bedrock fix; it is not a live Bedrock availability assertion. Revoking a real
+synthetic Clerk session rejected its still-unexpired JWT with 401.
+
+All 847 paced requests returned 200. Candidate CPU p99 in three initial runs:
+10.388/9.418/9.164 ms. Matched prior runs: 10.204/19.760 ms; matched candidate:
+6.968/10.132 ms. No consistent regression observed, but no Free CPU guarantee;
+aggregated/adaptive samples, cold/write-heavy/max-data and provider retries limit
+the evidence. Details: docs/PERFORMANCE.md. No authentication checks were weakened.
+
+Teardown caught stale tester authorization after ordinary secret updates. A
+fail-closed binding reset plus clean version upload / version-aware secrets /
+explicit 100% deployment resolved it. All three retired keys now deny; original
+tester gateway works; gateway alone cannot access account favourites. Temporary
+diagnostics and seven credential/session files were removed. 21 final hosted
+checks and final preservation checks pass. See docs/STAGING.md for the procedure.
+
+Current private source a04a522: API version 876ed2a4-b1c7-4d36-a6d5-6633cdfc51a1,
+Pages 3c60091c-ad13-4ebd-9263-159c46d06890. Public deployment remains
+d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34. Payments off, Worker public/preview URLs off,
+Pages fail closed. No spending, billing, Supabase migration or main merge.
+
+Public-only RC is frozen under ignored .wrangler/phase7/public-release-candidate-v2:
+51 files, 21 tools / 27 public pages, source a04a522, aggregate manifest SHA256
+41e903db978d3ab79af68175bc05af8fa99cc4270d52a23b714ea94428ba7bc9.
+No Clerk/QA/vault markers were found. It remains UNDEPLOYED pending explicit
+approval to update only randomtools-preview.pages.dev and its API-denial guard.
+No public signup, account/Pro/admin API, D1 migration, vault, payment or main merge
+is included in that approval. Preserve the current public deployment for rollback.
+
 ## Phase 6 development — 3 November 2026
 
 Follow-up `codex/phase6-resilience` fixes a confirmed startup/tool failure when
