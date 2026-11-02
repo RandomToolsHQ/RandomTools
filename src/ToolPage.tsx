@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import QRCode from "qrcode";
 import { Copy, Download, RotateCcw, ShieldCheck, Play } from "lucide-react";
 import { tools } from "./catalog";
+import { deviceGet } from "./device-storage";
 import { convert, download } from "./engines";
 import { runRegex } from "./regex";
 import { useQuery } from "@tanstack/react-query";
@@ -77,7 +78,7 @@ export default function ToolPage() {
         setOutput(result);
       } else setOutput(convert(id!, input, mode, other));
       setHasResult(true);
-      if (localStorage.getItem("analytics") === "true")
+      if (deviceGet("analytics") === "true")
         void api("/usage", { tool: id }).catch(() => {});
     } catch (e) {
       if (current === job.current) setError((e as Error).message);
@@ -108,7 +109,7 @@ export default function ToolPage() {
         );
       }
       setHasResult(true);
-      if (localStorage.getItem("analytics") === "true")
+      if (deviceGet("analytics") === "true")
         void api("/usage", { tool: id }).catch(() => {});
     } catch (e) {
       if (current === job.current) setError((e as Error).message);

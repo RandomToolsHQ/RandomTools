@@ -2,6 +2,16 @@
 
 ## Phase 6 development — 3 November 2026
 
+Follow-up `codex/phase6-resilience` fixes a confirmed startup/tool failure when
+browser preference storage is blocked. Theme/favourites degrade to tab/page
+state; anonymous counting fails closed for the tab if consent cannot be read or
+written, including failed opt-out against an older stored opt-in. A focused
+privacy unit test and four-target browser tests passed in application and public
+artifacts. No authentication, session, Pro/admin or payment policy changed.
+Vault CI 41466894743 passed (98 unit/integration cases, 64 application browser
+cases, 48 public-artifact cases, eight vault browser cases and all checks).
+Integration documentation CI 41467431441 also passed. The vault stays separate.
+
 Free-tool source c2dfa09 passed full CI 41465576263: 91 unit/integration tests,
 64 application browser cases and 48 public-build cases. Integration was
 fast-forwarded to that validated source. Main remains ab76f00. The isolated

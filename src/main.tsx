@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { tools } from "./catalog";
 import { storedTools, rememberTool } from "./tool-storage";
+import { deviceGet, deviceSet } from "./device-storage";
 import { api } from "./api";
 import "./style.css";
 const GeneratorTools = lazy(() => import("./GeneratorTools"));
@@ -76,9 +77,10 @@ const client = new QueryClient({
 });
 function App() {
   const [menu, setMenu] = useState(false);
-  const [light, setLight] = useState(localStorage.getItem("theme") === "light");
+  const [light, setLight] = useState(() => deviceGet("theme") === "light");
+  const [preferenceNotice, setPreferenceNotice] = useState("");
   const [analytics, setAnalytics] = useState(
-    localStorage.getItem("analytics") === "true",
+    () => deviceGet("analytics") === "true",
   );
   const loc = useLocation();
   const me = useQuery({ queryKey: ["me"], queryFn: () => api("/me") });
@@ -165,7 +167,12 @@ function App() {
   }, [loc.pathname]);
   useEffect(() => {
     document.documentElement.dataset.theme = light ? "light" : "dark";
-    localStorage.setItem("theme", light ? "light" : "dark");
+    if (!deviceSet("theme", light ? "light" : "dark")) {
+      setPreferenceNotice(
+        "Device storage is unavailable. Theme changes and disabled anonymous counting apply to this tab only.",
+      );
+      setAnalytics(false);
+    }
   }, [light]);
   return (
     <>
@@ -234,6 +241,7 @@ function App() {
         </div>
       </header>
       <main className="wrap" id="main-content" tabIndex={-1}>
+        {preferenceNotice && <p role="status">{preferenceNotice}</p>}
         {import.meta.env.VITE_DEPLOYMENT_STAGE === "staging" &&
           !publicToolsOnly && (
             <form action="/__staging/logout" method="post" className="privacy">
@@ -327,8 +335,12 @@ function App() {
             className="analytics-toggle"
             aria-pressed={analytics}
             onClick={() => {
-              localStorage.setItem("analytics", String(!analytics));
-              setAnalytics(!analytics);
+              const saved = deviceSet("analytics", String(!analytics));
+              setAnalytics(saved ? !analytics : false);
+              if (!saved)
+                setPreferenceNotice(
+                  "Device storage is unavailable. Anonymous counting is off for this tab; the preference could not be saved.",
+                );
             }}
           >
             Anonymous tool counts: {analytics ? "on" : "off"}
