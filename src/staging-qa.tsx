@@ -8,7 +8,13 @@ type Mode = "free" | "pro" | "admin" | "cpu" | "expired" | "revoked";
 export default function StagingQA() {
   const { getToken, isSignedIn } = useAuth();
   const [busy, setBusy] = useState(false);
-  const [report, setReport] = useState("");
+  const [report, setReport] = useState(() => {
+    try {
+      return sessionStorage.getItem("rt-staging-verification") || "";
+    } catch {
+      return "";
+    }
+  });
   async function run(mode: Mode) {
     setBusy(true);
     setReport("");
@@ -407,17 +413,26 @@ export default function StagingQA() {
     } catch (error) {
       checks.push({
         name:
-          error instanceof Error ? error.message : "Verification unavailable",
+          error instanceof Error &&
+          error.message.startsWith("Verification failed: ")
+            ? error.message
+            : "Verification unavailable",
         passed: false,
       });
     } finally {
-      setReport(
-        JSON.stringify(
-          { mode, started, ended: new Date().toISOString(), checks },
-          null,
-          2,
-        ),
+      const completed = JSON.stringify(
+        { mode, started, ended: new Date().toISOString(), checks },
+        null,
+        2,
       );
+      // Diagnostics only, never credentials: retain the result when Clerk
+      // unmounts this component on session revocation. Reload to read it.
+      try {
+        sessionStorage.setItem("rt-staging-verification", completed);
+      } catch {
+        /* The visible report remains usable if browser storage is blocked. */
+      }
+      setReport(completed);
       setBusy(false);
     }
   }

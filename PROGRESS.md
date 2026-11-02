@@ -5,6 +5,20 @@
 This entry supersedes the unfinished checkpoints below. The existing public
 18-tool deployment remains at the Phase 2 commit and was not redeployed.
 
+- Resume audit confirmed cleanup was already complete: zero named synthetic
+  users, presets/history or test subscriptions; the one genuine staging account
+  and active identity remain. Its role is free, active subscriptions are zero,
+  and the staging JSON tool is enabled. No further data deletion was needed.
+- The former admin session passed all 21 post-revocation checks, including 403
+  for every tested Pro/admin operation. All 17 earlier hosted admin checks passed.
+  Current API version a30f8ebf-bac9-42fc-9eb9-b9206829e0e1 serves 100% of restricted
+  staging; workers.dev and preview URLs remain disabled. Both private Pages
+  environments remain fail closed, and payments remain disabled.
+- Backend commit 5ca5b98 passed full GitHub CI on main (41371358365) and the Phase 3
+  branch (41371358184). Resume typecheck, lint and all 62 unit/integration tests
+  passed again. Reviewed the remaining staging-only diagnostics persistence fix:
+  it stores sanitized test outcomes, never tokens or authorization decisions.
+
 - Completed invited Google registration through normal Chrome after correcting
   Clerk Protect CSP requirements. Verified the primary mailbox and immutable
   subject before enabling only that tester. No password, code or security
@@ -48,8 +62,8 @@ This entry supersedes the unfinished checkpoints below. The existing public
 - Documented a Supabase Free backend alternative if tail headroom remains
   insufficient, including explicit migration approval and immediate revocation
   requirements. No new provider account, paid service, billing obligation or
-  live payment was enabled. Temporary fixtures/entitlements are being cleaned up
-  after the remaining hosted checks.
+  live payment was enabled. Temporary fixtures, admin access and subscriptions
+  have been removed; genuine account data and production resources were preserved.
 
 ## Phase 3 private staging — 1 November 2026 (in progress)
 

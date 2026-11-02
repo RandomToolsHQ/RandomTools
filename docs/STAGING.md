@@ -44,9 +44,9 @@ missing configuration denies all testers. Never grant admin/Pro access by email.
 
 Private origin: https://randomtools-web-staging.pages.dev/__staging
 
-The separate private Pages frontend is deployed (`e69771b4`), protected by the
+The separate private Pages frontend is deployed (`1a09193f`), protected by the
 owner-approved zero-billing gateway. The API `randomtools-api-staging` is deployed
-as version `27b0824d-2150-4050-8251-b316d7683d33`. Both workers.dev and version
+as version `a30f8ebf-bac9-42fc-9eb9-b9206829e0e1`. Both workers.dev and version
 preview URLs are disabled; the frontend uses a service binding. Do not upload
 `staging/dist` to the public tools project or give the public project API bindings.
 
@@ -150,7 +150,7 @@ npx.cmd wrangler deploy --config wrangler.staging.toml
 npx.cmd wrangler pages deploy dist --cwd staging --project-name randomtools-web-staging --branch main
 npx.cmd playwright test --config playwright.private.config.ts
 $env:PRIVATE_GATE_CREDENTIAL_FILE = '.wrangler/staging-gate-credentials.json'
-$env:PRIVATE_IMMUTABLE_URL = 'https://e69771b4.randomtools-web-staging.pages.dev'
+$env:PRIVATE_IMMUTABLE_URL = 'https://1a09193f.randomtools-web-staging.pages.dev'
 node scripts/check-private-staging.mjs
 ```
 
@@ -191,7 +191,10 @@ hosted Clerk flows or Free-plan CPU compatibility.
    identity provisioning. A real provider token without the required authorized
    party was rejected. All 21 real-session free-member checks and 27 Pro storage,
    retention, export and ownership checks passed. No client role claim granted
-   admin. Temporary test entitlements must be removed at the end of testing.
+   admin. Temporary admin access and the test subscription are now removed;
+   all 21 post-revocation checks passed. All named synthetic fixtures are gone,
+   while the genuine staging account and identity remain. New temporary grants
+   must likewise be removed at the end of future testing.
 3. Verify real account signup/verification,
    recovery, Google/GitHub login, logout/revocation, export and deletion using
    authorized test accounts. Signed delivery and real Google registration are
