@@ -1,5 +1,25 @@
 # RandomTools implementation status
 
+## Founder/Admin bootstrap — prepared, awaiting explicit owner confirmation
+
+Inspected live Clerk identity and active D1 issuer/subject mapping. The genuine
+verified enabled account is still free, with no admins or Pro grants. No remote
+privilege/schema/audit changes have been made during preparation.
+
+Added an operator-only, staging-pinned bootstrap CLI and atomic audit SQL. Its
+24-hour protected plan binds the exact Clerk ID, D1 ID, account fingerprint and
+one-time operation; application roles/claims/emails cannot invoke it. Applying
+requires exact confirmation arguments after owner approval. A temporary audit
+trigger makes promotion and admin.bootstrap.founder atomic, then is removed.
+Admin inherits non-expiring Pro through existing server checks; no payment or
+separate subscription/grant is introduced. Owner dashboard verification will use
+normal Clerk authentication, with any human security prompts left to the owner.
+
+All 95 unit/integration tests passed, including 24 focused bootstrap/manual-Pro
+cases, plus typecheck and lint. Root lint now explicitly scopes its TS config and
+ignores the pre-existing untracked nested checkout, which was left untouched.
+No application deployment, public registration, billing or main merge occurred.
+
 ## Approved Phase 7 public-only release — 3 November 2026
 
 The owner explicitly approved only frozen artifact SHA256

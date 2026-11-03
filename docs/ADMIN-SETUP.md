@@ -1,5 +1,42 @@
 # Admin bootstrap
 
+## Owner-confirmed Clerk staging bootstrap
+
+The existing schema has `free` and `admin` roles. Founder is an owner designation,
+not a client-controlled role or extra login mechanism. A verified enabled admin
+has inherent Pro access with no scheduled expiry; no subscription/payment or
+separate grant is required. Disabling the account or revoking its admin role
+remains effective through fresh database checks. Keep the staging gateway and
+Clerk live session/profile checks intact.
+
+Use the protected operator CLI, never a web role-mutation endpoint:
+
+1. Run `node scripts/admin-bootstrap.mjs --prepare --subject user_EXACT_ID`.
+   It performs remote reads only, verifies the provider's primary email, enabled
+   status and exact active issuer/subject-to-D1 mapping, and requires the first
+   admin baseline. It writes a 24-hour plan under ignored, user/SYSTEM-only
+   `.wrangler/founder-bootstrap` without copying API keys.
+2. Present the exact Clerk ID, D1 ID and `free` → `admin` / inherent permanent Pro
+   change to the owner. **Do not apply until the owner explicitly confirms.**
+3. After confirmation, use `--apply --confirm-subject EXACT_CLERK_ID
+   --confirm-user EXACT_D1_ID --confirm-operation EXACT_PLAN_OPERATION
+   --confirm-permissions admin-with-inherent-pro`. Do not put API keys in args.
+   The account/provider/plan are rechecked before any remote write.
+4. A temporary, narrowly scoped D1 trigger atomically records
+   `admin.bootstrap.founder` in existing audit_logs with the role update. Audit
+   failure rolls back the role change. The exact active identity, verified/
+   enabled state, absence of another admin, and unused operation ID are checked
+   in the update. The trigger is removed immediately; no hidden access remains.
+5. Verify one audit event, unchanged non-role account fields, inherent Pro and
+   the restricted dashboard with the owner's normal Clerk session. Never mint
+   an impersonation session or bypass a password/code/security prompt merely to
+   test the genuine account. Run ordinary-user escalation/security tests too.
+
+Replays do not promote again; consumed operations and expired plans are refused.
+The operator needs existing Cloudflare D1 authorization and the ignored local
+Clerk development backend key. No public registration, billing, authentication
+configuration, application deployment or Git main merge is part of this process.
+
 ## Current free-first access workflow
 
 Apply `0004_manual_pro.sql` to an isolated development database before running
