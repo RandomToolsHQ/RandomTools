@@ -246,6 +246,9 @@ export async function managedCurrent(
 }
 
 export async function managedWebhook(req: Request, env: ClerkEnvironment) {
+  // The release switch may be closed while deletion delivery continues, but
+  // production must still reject development/mixed provider configuration.
+  if (env.ENVIRONMENT === "production") clerkClient(env);
   if (!env.CLERK_WEBHOOK_SIGNING_SECRET || !env.CLERK_ISSUER)
     throw new AuthError(503, "Webhook is not configured");
   let event;

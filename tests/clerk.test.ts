@@ -750,6 +750,94 @@ describe("managed Clerk identity with real isolated D1", () => {
         .first("n"),
     ).toBe(1);
   });
+  it("recovers a provider-deleted account through signed delivery after completion-audit failure", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    await db.exec(
+      "CREATE TRIGGER reject_completion_audit BEFORE INSERT ON audit_logs WHEN NEW.action='account.delete.completed' BEGIN SELECT RAISE(ABORT,'synthetic completion audit outage'); END;",
+    );
+    try {
+      await expect(deleteManaged(env, user)).rejects.toThrow();
+      expect(mock.deleteUser).toHaveBeenCalledWith(subject);
+      expect(
+        await db
+          .prepare("SELECT disabled FROM users WHERE id=?")
+          .bind(user.id)
+          .first("disabled"),
+      ).toBe(1);
+      expect(
+        await db
+          .prepare("SELECT state FROM auth_identities WHERE subject=?")
+          .bind(subject)
+          .first("state"),
+      ).toBe("deleting");
+    } finally {
+      await db.exec("DROP TRIGGER reject_completion_audit;");
+    }
+    mock.verifyWebhook.mockResolvedValue({
+      type: "user.deleted",
+      data: { id: subject },
+    });
+    const webhookEnv = {
+      ...env,
+      CLERK_WEBHOOK_SIGNING_SECRET: "synthetic-webhook-fixture",
+    };
+    await managedWebhook(req(), webhookEnv);
+    await managedWebhook(req(), webhookEnv);
+    expect(
+      await db.prepare("SELECT id FROM users WHERE id=?").bind(user.id).first(),
+    ).toBeNull();
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) n FROM audit_logs WHERE target_id=? AND action='account.delete.completed'",
+        )
+        .bind(user.id)
+        .first("n"),
+    ).toBe(1);
+  });
+  it("keeps signed deletion delivery available with public accounts closed but rejects production development keys", async () => {
+    const live = {
+      ...env,
+      ENVIRONMENT: "production",
+      CLERK_SECRET_KEY: "sk_live_synthetic",
+      CLERK_PUBLISHABLE_KEY: "pk_live_synthetic",
+      CLERK_ISSUER: "https://clerk.synthetic.example",
+      CLERK_WEBHOOK_SIGNING_SECRET: "synthetic-webhook-fixture",
+    };
+    mock.authenticateRequest.mockResolvedValueOnce({
+      isAuthenticated: true,
+      toAuth: () => ({
+        userId: subject,
+        sessionId: "sess_fixture",
+        sessionClaims: { iss: live.CLERK_ISSUER, azp: origin, fva: [0, -1] },
+      }),
+    });
+    const user = (await managedCurrent(req(), live))!;
+    mock.verifyWebhook.mockResolvedValue({
+      type: "user.deleted",
+      data: { id: subject },
+    });
+    const hook = () =>
+      new Request(origin + "/api/webhooks/clerk", {
+        method: "POST",
+        body: "{}",
+      });
+    expect(
+      (
+        await worker.fetch(hook(), {
+          ...env,
+          ENVIRONMENT: "production",
+          CLERK_WEBHOOK_SIGNING_SECRET: "synthetic-webhook-fixture",
+        })
+      ).status,
+    ).toBe(503);
+    expect(mock.verifyWebhook).not.toHaveBeenCalled();
+    expect((await worker.fetch(hook(), live)).status).toBe(200);
+    expect(
+      await db.prepare("SELECT id FROM users WHERE id=?").bind(user.id).first(),
+    ).toBeNull();
+    expect((await worker.fetch(req(), live)).status).toBe(503);
+  });
   it("verifies deletion webhooks and applies duplicate events idempotently", async () => {
     const user = (await managedCurrent(req(), env))!;
     const webhookEnv = {

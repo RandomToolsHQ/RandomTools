@@ -1,5 +1,13 @@
 # Admin bootstrap
 
+Phase 8 protects all administrators from app self-deletion and disabling by
+another administrator. The server enforces these restrictions; UI controls are
+also disabled/absent. No role mutation API has been added. This does not prevent
+an owner directly deleting their identity at Clerk: genuine signed deletion
+events must still be honored. Protect provider recovery factors and review any
+owner recovery/deletion with an authorized operator. Never test it on the genuine
+Founder account. See [public account launch/recovery gates](PUBLIC-ACCOUNTS.md).
+
 ## Owner-confirmed Clerk staging bootstrap
 
 The existing schema has `free` and `admin` roles. Founder is an owner designation,
