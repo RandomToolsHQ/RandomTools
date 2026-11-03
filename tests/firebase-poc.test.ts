@@ -7,7 +7,7 @@ import {
   expect,
   vi,
 } from "vitest";
-import { readFile, readdir, mkdtemp } from "node:fs/promises";
+import { readFile, readdir, mkdtemp, mkdir, unlink, rmdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -80,6 +80,7 @@ async function login(token?: string) {
   return { token: raw, cookie: r.headers.get("set-cookie")!.split(";")[0] };
 }
 beforeAll(async () => {
+  await mkdir(resolve(".wrangler"), { recursive: true });
   const dir = await mkdtemp(resolve(".wrangler/firebase-test-")),
     openssl =
       process.platform === "win32" &&
@@ -107,6 +108,9 @@ beforeAll(async () => {
   );
   key = await importPKCS8(await readFile(dir + "/key.pem", "utf8"), "RS256");
   cert = await readFile(dir + "/cert.pem", "utf8");
+  await unlink(dir + "/key.pem");
+  await unlink(dir + "/cert.pem");
+  await rmdir(dir);
   mf = new Miniflare(
     convertV4MiniflareOptions({
       modules: true,
