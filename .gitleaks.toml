@@ -5,3 +5,8 @@ useDefault = true
 description = "Exact public Clerk staging publishable key; never allow backend secret keys"
 regexTarget = "secret"
 regexes = ['''^pk_test_cXVpZXQtY2l2ZXQtODc4Mi5jbGVyay5hY2NvdW50cy5kZXYk$''']
+
+[[allowlists]]
+description = "Exact public isolated Worker deployment UUID in Firebase POC documentation; not a credential"
+regexTarget = "secret"
+regexes = ['''^e9d241c3-cce9-4563-acfe-d8685112c936$''']
