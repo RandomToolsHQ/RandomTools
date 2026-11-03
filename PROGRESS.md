@@ -1,10 +1,33 @@
 # RandomTools implementation status
 
-## Founder/Admin bootstrap — prepared, awaiting explicit owner confirmation
+## Founder/Admin bootstrap — applied and verified, 3 November 2026
+
+After explicit owner confirmation, promoted Clerk account
+`user_3LUhsYBgMoYC8DxgFjnXhOKh19G` from free to permanent staging admin.
+Existing admin authorization provides inherent Pro without an expiry or separate
+grant. Atomic audit `founder_bootstrap_66d01a3dc47f2d40d7cf05a2648a9f05`
+records `admin.bootstrap.founder`; receipt verifies audit success, temporary
+trigger removal and unchanged non-role account fields. No other account changed.
+
+Verified with the owner's genuine existing Chrome/Clerk session after refreshing:
+Pro workspace rendered; Admin dashboard loaded one registered/admin account and
+one active Pro user; audit UI displayed the exact bootstrap event. No admin writes
+were performed during UI verification. Anonymous private dashboard/API requests
+remain 403, as does the public API. Public deployment and restricted gateway,
+Clerk configuration, payments and billing were not modified.
+
+Bootstrap commit 76d0d9d passed full GitHub CI run 41576500441, including unit,
+integration, browser, public-build, backup, typecheck, lint and deployment dry-run
+checks. Re-ran all 24 focused bootstrap/manual-Pro tests after promotion: passed,
+including ordinary-user authorization and escalation protection. The protected
+plan is consumed; this is the explicitly approved genuine owner role, not a
+temporary fixture to remove. Main remains unchanged.
+
+### Preparation history
 
 Inspected live Clerk identity and active D1 issuer/subject mapping. The genuine
-verified enabled account is still free, with no admins or Pro grants. No remote
-privilege/schema/audit changes have been made during preparation.
+verified enabled account was free, with no admins or Pro grants. No remote
+privilege/schema/audit changes were made during preparation.
 
 Added an operator-only, staging-pinned bootstrap CLI and atomic audit SQL. Its
 24-hour protected plan binds the exact Clerk ID, D1 ID, account fingerprint and
