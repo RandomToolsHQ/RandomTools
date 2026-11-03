@@ -1,5 +1,38 @@
 # Private authenticated Worker CPU investigation
 
+## Phase 8 — 3 November 2026
+
+Measured source `c9192bb`, restricted API version
+`6a0a051a-b06d-45bf-b76f-e6ffe1891002`. Three bounded sequential windows used
+40 requests each, with at least 650 ms between completed calls. Paths: /me,
+/pro-access, preferences, presets, history and account export; every tenth call
+wrote preferences. The synthetic member had a saved 100-line preset, history,
+preferences, a favourite and an active manual grant. Clerk JWT verification,
+live session/profile checks, gateway and fresh D1 authorization stayed enabled.
+
+| Window (UTC) | HTTP | Analytics count | CPU p50 / p95 / p99 ms | Wall median / p99 ms | Runtime errors |
+| --- | --- | ---: | --- | --- | ---: |
+| 04:36:32–04:37:22 | 40/40 200 | 37 | 5.286 / 9.513 / 9.553 | 583.7 / 669.4 | 0 |
+| 04:37:24–04:38:14 | 40/40 200 | 40 | 5.545 / 7.894 / 8.692 | 581.1 / 843.8 | 0 |
+| 04:38:17–04:39:06 | 40/40 200 | 39 | 5.492 / 8.018 / 9.120 | 562.1 / 755.4 | 0 |
+
+Adaptive analytics counts are estimated/sampled and differ from browser counts.
+All reported groups had success outcome. No caught HTTP failures or Clerk
+throttling occurred in the 120-request workload. Cloudflare's analytics budget
+temporarily rejected the second query; it succeeded after the budget reset.
+That analytics rate limit was not a Worker CPU failure or Clerk throttling.
+
+These are warm, small-populated, low-concurrency observations, not maximum-size,
+cold-start, recovery or public-load guarantees. Earlier >10ms tails remain
+unresolved. Do not claim general Workers Free reliability or production readiness.
+No authorization caching or speculative CPU optimization was introduced.
+
+The final follow-up `8067d9c` only adds a production configuration check inside
+the deletion webhook handler, plus tests/docs. It does not change the ordinary
+authenticated paths measured above; the table still describes the actual tested
+version, not a new benchmark of the follow-up. Private synthetic hosted evidence
+is under ignored, owner/SYSTEM-only `.wrangler/phase8`.
+
 ## Manual Pro hosted follow-up — 2 November 2026
 
 Source `cc98ed9`, measured API version `0be9322a-266c-4acf-85c0-d93ed5e2e9f5`.

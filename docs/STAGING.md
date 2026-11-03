@@ -1,5 +1,30 @@
 # Cloudflare staging — current deployment
 
+## Phase 8 — current restricted account candidate, 3 November 2026
+
+Private URL: https://randomtools-web-staging.pages.dev/. API source 8067d9c is
+active at 100% as Worker cd310326-d6c2-4b5b-af3c-0f499e84d32f. Frontend source
+c9192bb is Pages deployment 5d3c61a8-a658-409a-941d-1a07147dcfd6. Its frozen
+57-file restricted manifest SHA256 is
+46ac1b6265c48cda53accd6b5b9799a7126b9cec19099e65bd1dbabf8e8473dd.
+Never deploy this development-auth artifact publicly.
+
+Full CI 41579892734 passed (106 unit/integration, 68 app and 52 public browser
+cases plus typecheck/lint/builds/backup/SEO/dry run). Hosted synthetic checks cover
+manual Pro, real managed deletion, revocation, ownership and desktop/mobile
+accessibility. All 30 final gateway/security checks and 24 cleanup checks passed.
+Original tester only; temporary accounts/keys/sessions removed, minimal synthetic
+tombstones/audits retained. All genuine account data, enabled verified Founder
+admin role and inherent Pro remain unchanged. No schema migration occurred.
+
+Public deployment remains 81de8536-ed2f-4204-941b-ada7fcba1c2a with 21 tools and
+no API/D1 binding. No public registration, payment/billing or Supabase change.
+Production accounts default closed; signed deletion ingestion remains available
+with valid production configuration. See [PUBLIC-ACCOUNTS.md](PUBLIC-ACCOUNTS.md)
+for provider requirements, release gates and recovery/rollback. CPU p99 in the
+three bounded measured windows was 9.553/8.692/9.120 ms; earlier >10ms spikes are
+still unresolved. See PERFORMANCE.md; do not claim general Free-plan reliability.
+
 ## Approved public free-tools release — 3 November 2026
 
 https://randomtools-preview.pages.dev/ now serves all 21 free tools from source
@@ -16,13 +41,13 @@ contain no login fields or Clerk development SDK. No D1/service binding exists.
 One opt-in live Java status lookup also returned HTTP 200. Browser checks cover
 desktop/mobile Chromium, Firefox, WebKit, accessibility, navigation and downloads.
 
-Restricted staging remains exactly at the Worker/Pages IDs in the next section;
+At the time of this public release, restricted staging remained at the Phase 7 IDs;
 anonymous private account/admin/Pro probes remain 403. No D1/Clerk/payment/billing
 change or Git main merge occurred. The vault remains excluded. If a later public
 verification fails, use the retained public Pages deployment's rollback action;
 never restore D1 or change restricted staging to roll back these static tools.
 
-## Phase 7 — current restricted staging, 3 November 2026
+## Phase 7 — historical restricted validation, 3 November 2026
 
 Validated application source `a04a522` is deployed only to
 https://randomtools-web-staging.pages.dev. Worker version

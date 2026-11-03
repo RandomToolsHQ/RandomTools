@@ -1,5 +1,76 @@
 # RandomTools implementation status
 
+## Phase 8 — restricted account release candidate, 3 November 2026
+
+Branch `codex/phase8-account-readiness` continues the Founder bootstrap and
+preserves the public 21-tool deployment `81de8536-ed2f-4204-941b-ada7fcba1c2a`.
+Main remains ab76f00. No vault merge, schema migration, genuine account change,
+billing, payment activation or public authentication deployment occurred.
+
+Implemented typed managed deletion confirmation, guarded/busy account controls,
+recovery and verification guidance, profile ownership explanation, Pro reason
+privacy guidance and responsive structured audit events. Server guards protect
+all admins against app self-deletion and other-admin disabling. Deletion rereads
+the role, atomically audits/disables, treats provider 404 as already deleted, and
+atomically completes audit/tombstone/cascades. Unknown signed deletion events
+retain tombstones. Provider outages stay disabled; operator-assisted recovery is
+documented. App protection cannot prevent direct provider deletion by the owner.
+
+Production accounts now require an explicit PUBLIC_ACCOUNTS_ENABLED=true switch
+and live provider configuration. Signed deletion delivery remains available when
+accounts are closed, but production webhook configuration must still be live.
+No JWT, expiry, revocation, ownership, Pro/admin or audit protection was removed.
+
+Source c9192bb passed full CI 41578261883: 104 unit/integration tests, 68 app
+browser and 52 public-artifact browser cases, typecheck, lint, restore rehearsal,
+builds, SEO and deploy dry run. Eight hosted anonymous gateway browser tests
+passed. Follow-up 8067d9c adds webhook/recovery regression coverage; full CI
+41579892734 passed with 106 unit/integration tests, 68 app and 52 public browser
+cases plus the other build/security/backup checks. Its 24 Clerk tests also pass
+locally with typecheck and lint.
+
+Hosted synthetic testing passed 81 assertions (66 distinct checks), including
+real Clerk SDK ticket sessions, immutable mapping, role injection denial,
+request duplication/decisions, direct grants, expiry, revocation, populated
+workspace ownership/export, mobile/desktop settings/admin/Pro accessibility,
+actual managed account deletion with cascades/audit, live revoked-token denial,
+and ordinary-member denial after synthetic admin demotion. Tickets provisioned
+test sessions; they do not prove public registration, mailbox recovery or Google/
+GitHub enrollment. Human verification/security flows were not bypassed.
+
+All 120 paced authenticated measurement requests returned 200; sampled CPU p99
+was 9.553 / 8.692 / 9.120 ms, with zero sampled runtime errors. No Clerk throttling.
+One analytics budget delay resolved after reset. See PERFORMANCE.md for counts,
+latencies and limitations. Earlier Free-plan >10ms spikes remain a launch gate.
+
+Cleanup removed all three synthetic provider/D1 accounts and their owned records,
+retaining minimal deleted identity tombstones/audits. Seventeen original tables,
+original identity rows and original audits were preserved; one genuine enabled
+verified Admin remains. All retired gateway keys/cookies reject with 403. The
+original key works. An existing gateway login rate bucket was allowed to expire
+without clearing or bypassing it. Twenty-four cleanup/preservation assertions
+passed. A subsequent full gateway/CSP/Clerk-required/payment smoke check passed.
+
+Final deployment: Worker cd310326-d6c2-4b5b-af3c-0f499e84d32f at 100% from
+8067d9c; private Pages 5d3c61a8-a658-409a-941d-1a07147dcfd6 from frontend
+c9192bb. All 30 final gateway/CSP/Clerk-required/payment checks passed. Direct
+Worker and preview URLs remain disabled; public Pages has no D1/service binding.
+
+All 21 live public routes retain correct tool titles and no Clerk configuration;
+the public deployment ID is unchanged. Gitleaks scanned all 34 reachable commits
+with no leaks; the subsequent 8067d9c commit also passed its own scan. Local
+secrets, staging env and .wrangler files are Git ignored. Eight synthetic
+credential/session files were removed after final activation/verification.
+
+The frozen 57-file restricted frontend artifact has manifest SHA256
+46ac1b6265c48cda53accd6b5b9799a7126b9cec19099e65bd1dbabf8e8473dd (c9192bb).
+It is not authorized for public deployment. PUBLIC-ACCOUNTS.md contains the
+source-linked auth comparison, release gates, deletion recovery and rollback.
+Clerk production needs owned-domain DNS; no supported DNS-free Pages production
+setup was verified. Recommend an isolated Firebase Authentication Spark proof of
+concept for strict zero purchasing, not an unapproved provider switch. Supabase
+and Auth0 default email delivery also have production constraints.
+
 ## Founder/Admin bootstrap — applied and verified, 3 November 2026
 
 After explicit owner confirmation, promoted Clerk account
