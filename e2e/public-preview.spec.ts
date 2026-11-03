@@ -55,6 +55,7 @@ test("hosted public API stays closed to account, admin, Pro and payment requests
     "/api/auth/register",
     "/api/admin",
     "/api/pro/presets",
+    "/api/pro/ip-lookup",
     "/api/account/export",
     "/api/webhooks/kofi",
   ]) {
@@ -67,4 +68,8 @@ test("hosted public API stays closed to account, admin, Pro and payment requests
     data: { email: "synthetic@example.test" },
   });
   expect(response.status()).toBe(403);
+  const lookup = await request.post("/api/pro/ip-lookup", {
+    data: { ip: "1.1.1.1", consent: true },
+  });
+  expect(lookup.status()).toBe(403);
 });

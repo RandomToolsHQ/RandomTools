@@ -200,3 +200,91 @@ test("provider outages stay visible and never manufacture a Pro workspace", asyn
     page.getByRole("heading", { name: "Populated workspace" }),
   ).toHaveCount(0);
 });
+
+test("refresh removes stale Admin and Pro views after server revocation and fails closed on expiry", async ({
+  page,
+}) => {
+  let privileged = true;
+  let expired = false;
+  await page.route("**/api/me", (r) =>
+    r.fulfill({
+      status: expired ? 401 : 200,
+      json: expired
+        ? { error: "Session expired" }
+        : {
+            user: {
+              id: "synthetic-member",
+              name: "Synthetic member",
+              role: privileged ? "admin" : "free",
+            },
+            pro: privileged,
+          },
+    }),
+  );
+  await page.route("**/api/admin", (r) =>
+    r.fulfill({ json: { users: [], audit: [] } }),
+  );
+  await page.route("**/api/pro/presets", (r) => r.fulfill({ json: [] }));
+  await page.goto("/");
+  await page
+    .getByLabel("Test email", { exact: true })
+    .fill("synthetic@example.test");
+  await page
+    .getByLabel("Test password", { exact: true })
+    .fill("existing synthetic fixture password");
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  await page.getByRole("button", { name: "Connect private workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Synthetic administration" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Populated workspace" }),
+  ).toBeVisible();
+  privileged = false;
+  await page.getByRole("button", { name: "Refresh account" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Synthetic member · Free" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Synthetic administration" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Populated workspace" }),
+  ).toHaveCount(0);
+  expired = true;
+  await page.getByRole("button", { name: "Refresh account" }).click();
+  await expect(page.getByRole("alert")).toContainText("Session expired");
+  await expect(
+    page.getByRole("button", { name: "Refresh account" }),
+  ).toHaveCount(0);
+});
+
+test("logout clears local authentication when server revocation fails without claiming global success", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByLabel("Test email", { exact: true })
+    .fill("synthetic@example.test");
+  await page
+    .getByLabel("Test password", { exact: true })
+    .fill("existing synthetic fixture password");
+  await page.getByRole("button", { name: "Continue with email" }).click();
+  await page.getByRole("button", { name: "Connect private workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Synthetic member · Free" }),
+  ).toBeVisible();
+  await page.route("**/api/logout", (r) =>
+    r.fulfill({ status: 503, json: { error: "Provider unavailable" } }),
+  );
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Sign in or register" }),
+  ).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(
+    "Server session revocation could not be confirmed",
+  );
+  await expect(
+    page.getByRole("button", { name: "Refresh account" }),
+  ).toHaveCount(0);
+});

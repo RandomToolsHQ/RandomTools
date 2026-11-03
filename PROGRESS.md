@@ -18,8 +18,22 @@ Fixed saved workflow configuration validation, corrupt-JSON loading, preservatio
 of empty regex flags/replacement and stale exported results. Added a busy-state
 guard for batch file inputs and stronger WebKit readiness assertions. The prior
 WebKit hash/image batch failure now passes individually. Local unit/integration
-suite: 175 passing tests across 24 files. Full browser/CI validation of this
-candidate is in progress; results will be recorded after the runs finish.
+suite: 175 passing tests across 24 files. All 80 application browser cases and
+52 public-artifact cases passed across desktop/mobile Chromium, Firefox and
+WebKit. Another 52 read-only hosted cases passed against the unchanged public
+website, including direct denial of the new Pro lookup path. Firebase UI has
+12 passing fixture cases, and the official local Auth Emulator passed five
+lifecycle checks. Five offline keyless-helper guards pass even under python -O.
+Typecheck, lint, root npm audit (zero findings), redacted staged/commit secret
+scans, backup/restore, SEO, all builds and both Worker dry runs passed locally.
+Firebase UI fixes clear stale privileged views and complete local logout while
+warning if server revocation fails. Final source CI is being verified separately.
+
+The full account/staging build still emits Vite's existing >500 KiB chunk warning;
+the tools-only build's largest entry is about 438 KiB before gzip. Firebase CLI's
+temporary emulator install emits upstream deprecation/Node 26 engine warnings;
+CI uses Node 22. These warnings were not suppressed or represented as audit passes
+for the Firebase CLI's separate dependency tree.
 
 Phase 9.2 fixed missing Firebase rate-limit-secret handling to fail closed
 (753d257). Positive hosted Firebase lifecycle and representative CPU validation

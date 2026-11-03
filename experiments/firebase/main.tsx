@@ -47,7 +47,10 @@ async function api(path: string, body?: unknown, method?: string) {
   } catch {
     throw Error("The testing service is unavailable");
   }
-  if (!r.ok) throw Error(data.error || "Request failed");
+  if (!r.ok)
+    throw Object.assign(Error(data.error || "Request failed"), {
+      status: r.status,
+    });
   return data;
 }
 function Experiment() {
@@ -83,6 +86,12 @@ function Experiment() {
     try {
       await fn();
     } catch (e) {
+      if ([401, 403].includes((e as { status: number }).status)) {
+        setMe(null);
+        setAccess(null);
+        setAdmin(null);
+        setPresets([]);
+      }
       const code = (e as { code?: string }).code;
       setError(
         code
@@ -107,11 +116,20 @@ function Experiment() {
     }
   }
   async function refresh() {
+    // Discard stale privileged UI before any refresh can fail. Publish the
+    // new snapshot only after all server-authorized reads have succeeded.
+    setMe(null);
+    setAccess(null);
+    setAdmin(null);
+    setPresets([]);
     const d = await api("/me");
+    const a = await api("/pro-access"),
+      p = d.pro ? await api("/pro/presets") : [],
+      ad = d.user.role === "admin" ? await api("/admin") : null;
     setMe(d);
-    setAccess(await api("/pro-access"));
-    if (d.pro) setPresets(await api("/pro/presets"));
-    if (d.user.role === "admin") setAdmin(await api("/admin"));
+    setAccess(a);
+    setPresets(p);
+    setAdmin(ad);
   }
   async function start() {
     await auth!.currentUser!.reload();
@@ -331,9 +349,22 @@ function Experiment() {
                 disabled={busy}
                 onClick={() =>
                   void action(async () => {
-                    if (me) await api("/logout", {});
-                    await signOut(auth);
-                    setMe(null);
+                    let revocationFailed = false;
+                    try {
+                      if (me) await api("/logout", {});
+                    } catch {
+                      revocationFailed = true;
+                    } finally {
+                      await signOut(auth);
+                      setMe(null);
+                      setAccess(null);
+                      setAdmin(null);
+                      setPresets([]);
+                    }
+                    if (revocationFailed)
+                      throw Error(
+                        "Signed out on this device. Server session revocation could not be confirmed; retry when the service is available or contact the test operator.",
+                      );
                     setMessage("Signed out.");
                   })
                 }

@@ -4,6 +4,43 @@ This branch does not replace Clerk, migrate accounts or enable public signup.
 The public 21-tool deployment and restricted Clerk environment remain unchanged.
 Never apply `experiments/firebase/0006_poc_sessions.sql` to genuine staging.
 
+## Phase 9.2 security review — release candidate, not deployed
+
+Current local evidence: 175 unit/integration tests, 12 POC UI fixture cases,
+five official Auth Emulator lifecycle checks and five offline keyless-helper
+guard tests pass. Guard tests mock every gcloud call and run under python -O;
+they do not create IAM grants, tokens or cloud resources. Existing application
+browser suite passes 80 cases, public artifact 52, and unchanged hosted public
+site another 52. Root audit reports zero findings. The Firebase CLI's temporary
+emulator dependency tree emits upstream deprecation/Node 26 compatibility
+warnings; those are distinct from the audited project lockfile.
+
+JWT checks remain RS256 signature, exact issuer/audience, expiry/issued-at,
+auth_time, verified email, synthetic UID allowlist and live provider lookup on
+every request. Only public signing keys are cached. Revoked, disabled, deleted
+or unavailable provider state cannot authorize access. D1 roles/Pro grants,
+application session ownership and gateway email binding remain fresh checks.
+Strict Origin/JSON checks and Secure/HttpOnly/SameSite=Strict cookies remain;
+client claims cannot promote roles or entitlements. No genuine identity is used.
+
+Confirmed fixes: missing RATE_LIMIT_SECRET now fails closed; account refresh
+discards old admin/Pro views before publishing a new server-authorized snapshot;
+401/403 errors clear stale account views. A failed server logout no longer traps
+the user in local Firebase sign-in. Local sign-out completes, but the UI warns
+that server-wide revocation could not be confirmed. This warning is not evidence
+of successful revocation during an outage. Added desktop/mobile regression cases.
+
+Provider errors are sanitized and identity tokens are not logged or stored in
+browser persistent storage. React renders untrusted strings as text. The POC
+continues using in-memory Firebase persistence; a reload requires sign-in again.
+Cloudflare D1 contents are private by access control, not end-to-end encrypted.
+
+Remaining gates: hosted positive verification/recovery, provider-wide revocation,
+disabled/deleted users, populated Pro/admin ownership and repeated accepted CPU
+workloads; actual inbox delivery and separately approved synthetic Google OAuth;
+verified complete IAM policy cleanup. Emulator/fixture tests cannot close these
+gates. No public launch or migration recommendation is justified yet.
+
 ## Scope and implementation
 
 The separate frontend supports email/password registration, verification resend,
