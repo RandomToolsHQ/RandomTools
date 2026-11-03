@@ -1360,3 +1360,18 @@ html[data-theme="light"] .prose a {
 .generator-page a {
   text-decoration: underline;
 }
+.audit-events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.audit-events li {
+  display: grid;
+  gap: 8px;
+  padding: 16px 0;
+  border-bottom: 1px solid #64748b70;
+  overflow-wrap: anywhere;
+}
+.audit-events time {
+  font-size: 0.9rem;
+}

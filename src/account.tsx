@@ -24,6 +24,7 @@ export default function Account({ page }: { page: string }) {
     setDevLink("");
   }, [page]);
   async function action(fn: () => Promise<any>) {
+    if (busy) return;
     setBusy(true);
     setMessage("");
     setDevLink("");
@@ -216,6 +217,7 @@ export default function Account({ page }: { page: string }) {
           </Link>
         )}
         <button
+          disabled={busy}
           onClick={() =>
             void action(async () => {
               const r = await api("/auth/logout", {});
@@ -241,6 +243,13 @@ export default function Account({ page }: { page: string }) {
             <p>
               {user.email} · {user.verified ? "Verified" : "Unverified"}
             </p>
+            {managedAuth && (
+              <p className="muted">
+                This display name belongs to your RandomTools workspace. Manage
+                sign-in methods and recovery in Account security. Changing an
+                email never transfers ownership of another account.
+              </p>
+            )}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -262,7 +271,9 @@ export default function Account({ page }: { page: string }) {
                   maxLength={80}
                 />
               </label>
-              <button className="primary">Save profile</button>
+              <button disabled={busy} className="primary">
+                {busy ? "Saving…" : "Save profile"}
+              </button>
             </form>
           </div>
           {managedAuth ? (
@@ -314,6 +325,7 @@ export default function Account({ page }: { page: string }) {
               records.
             </p>
             <button
+              disabled={busy}
               className="secondary"
               onClick={() =>
                 void action(async () => {
@@ -330,55 +342,87 @@ export default function Account({ page }: { page: string }) {
           </div>
           <div className="panel">
             <h2>Delete account</h2>
-            <p>
-              Permanently deletes your account, sessions, saved work and manual
-              Pro access records. Payments are disabled.
-            </p>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void action(async () => {
-                  const r = await api(
-                    "/account",
-                    managedAuth
-                      ? { confirmation: "DELETE" }
-                      : Object.fromEntries(new FormData(e.currentTarget)),
-                    "DELETE",
-                  );
-                  window.location.assign("/");
-                  return r;
-                });
-              }}
-            >
-              {managedAuth ? (
+            {user.role === "admin" ? (
+              <p>
+                Administrator accounts are protected from self-deletion. Contact
+                the owner for a reviewed recovery or deletion process. Your
+                Admin and inherent Pro access have no scheduled expiry.
+              </p>
+            ) : (
+              <>
                 <p>
-                  Sign in again within five minutes before deleting. This also
-                  deletes your Clerk identity.
+                  Permanently deletes your account, sessions, saved work and
+                  manual Pro access records. Payments are disabled.
                 </p>
-              ) : (
-                <label>
-                  Confirm password
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    autoComplete="current-password"
-                  />
-                </label>
-              )}
-              <label>
-                <input type="checkbox" required /> I understand that deletion is
-                permanent.
-              </label>
-              <button className="secondary">Permanently delete account</button>
-            </form>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void action(async () => {
+                      const r = await api(
+                        "/account",
+                        managedAuth
+                          ? {
+                              confirmation: new FormData(e.currentTarget).get(
+                                "confirmation",
+                              ),
+                            }
+                          : Object.fromEntries(new FormData(e.currentTarget)),
+                        "DELETE",
+                      );
+                      if (managedAuth) await managedSignOut();
+                      client.clear();
+                      window.location.assign("/");
+                      return r;
+                    });
+                  }}
+                >
+                  {managedAuth ? (
+                    <>
+                      <p id="delete-help">
+                        Sign in again within five minutes before deleting. This
+                        also deletes your Clerk identity. Export your data
+                        first. If deletion is interrupted, access stays disabled
+                        while support completes cleanup.
+                      </p>
+                      <label>
+                        Type DELETE to confirm
+                        <input
+                          name="confirmation"
+                          autoComplete="off"
+                          required
+                          pattern="DELETE"
+                          aria-describedby="delete-help"
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <label>
+                      Confirm password
+                      <input
+                        name="password"
+                        type="password"
+                        required
+                        autoComplete="current-password"
+                      />
+                    </label>
+                  )}
+                  <label>
+                    <input type="checkbox" required /> I understand that
+                    deletion is permanent.
+                  </label>
+                  <button disabled={busy} className="secondary">
+                    Permanently delete account
+                  </button>
+                </form>
+              </>
+            )}
           </div>
         </div>
       ) : page === "subscription" ? (
         <ProAccess />
       ) : page === "admin" ? (
         user.role === "admin" ? (
-          <Admin action={action} />
+          <Admin action={action} busy={busy} />
         ) : (
           <p role="alert">Administrator access required.</p>
         )
@@ -403,7 +447,7 @@ export default function Account({ page }: { page: string }) {
   );
 }
 type Action = (fn: () => Promise<any>) => Promise<any>;
-function Admin({ action }: { action: Action }) {
+function Admin({ action, busy }: { action: Action; busy: boolean }) {
   const [search, setSearch] = useState("");
   const q = useQuery({
     queryKey: ["admin", search],
@@ -425,12 +469,15 @@ function Admin({ action }: { action: Action }) {
             placeholder="Name or email"
           />
         </label>
+        {q.isPending && <p role="status">Loading administration…</p>}
+        {q.data?.users?.length === 0 && <p>No matching accounts.</p>}
         {q.data?.users?.map((u: any) => (
           <div key={u.id}>
             <span>
               {u.name} · {u.email} · {u.role}
             </span>
             <button
+              disabled={busy || u.role === "admin"}
               className="secondary"
               onClick={() =>
                 void action(() =>
@@ -438,7 +485,11 @@ function Admin({ action }: { action: Action }) {
                 )
               }
             >
-              {u.disabled ? "Enable" : "Disable"} account
+              {u.role === "admin"
+                ? "Protected administrator"
+                : u.disabled
+                  ? "Enable account"
+                  : "Disable account"}
             </button>
           </div>
         ))}
@@ -472,13 +523,56 @@ function Admin({ action }: { action: Action }) {
             <label>
               <input type="checkbox" name="enabled" defaultChecked /> Enabled
             </label>
-            <button className="secondary">Save availability</button>
+            <button disabled={busy} className="secondary">
+              Save availability
+            </button>
           </form>
         </div>
         {["audit", "usage"].map((key) => (
           <div key={key} className="panel">
             <h2>{key === "audit" ? "Audit logs" : "Anonymous usage"}</h2>
-            <pre>{JSON.stringify(q.data?.[key] || [], null, 2)}</pre>
+            {key === "audit" ? (
+              q.isPending ? (
+                <p role="status">Loading audit events…</p>
+              ) : q.data?.audit?.length ? (
+                <ol
+                  className="audit-events"
+                  aria-label="Recent administrative and account events"
+                >
+                  {q.data.audit.map(
+                    (event: {
+                      id: string;
+                      action: string;
+                      created_at: number;
+                      actor_id: string | null;
+                      target_id: string | null;
+                    }) => (
+                      <li key={event.id}>
+                        <strong>{event.action}</strong>
+                        <time
+                          dateTime={new Date(
+                            event.created_at * 1000,
+                          ).toISOString()}
+                        >
+                          {new Date(event.created_at * 1000).toLocaleString()}
+                        </time>
+                        <small>
+                          Actor: {event.actor_id || "System"}
+                          <br />
+                          Target: {event.target_id || "None"}
+                          <br />
+                          Event: {event.id}
+                        </small>
+                      </li>
+                    ),
+                  )}
+                </ol>
+              ) : (
+                <p>No recent audit events.</p>
+              )
+            ) : (
+              <pre>{JSON.stringify(q.data?.[key] || [], null, 2)}</pre>
+            )}
           </div>
         ))}
       </div>

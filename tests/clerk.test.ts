@@ -98,6 +98,29 @@ it("rejects a gateway identity mismatch before provisioning any D1 account", asy
     .first();
   expect(identity).toBeNull();
 });
+it("keeps production closed independently of provider configuration and rejects mixed development keys", async () => {
+  const closed = await worker.fetch(req(), {
+    ...env,
+    ENVIRONMENT: "production",
+  });
+  expect(closed.status).toBe(503);
+  expect(await closed.text()).toContain(
+    "Public accounts have not been enabled",
+  );
+  for (const overrides of [
+    {
+      CLERK_SECRET_KEY: "sk_live_fixture",
+      CLERK_PUBLISHABLE_KEY: "pk_test_fixture",
+    },
+    {
+      CLERK_SECRET_KEY: "sk_live_fixture",
+      CLERK_PUBLISHABLE_KEY: "pk_live_fixture",
+    },
+  ])
+    expect(() =>
+      clerkClient({ ...env, ...overrides, ENVIRONMENT: "production" }),
+    ).toThrow("live Clerk");
+});
 beforeAll(async () => {
   mf = new Miniflare(
     convertV4MiniflareOptions({
@@ -552,6 +575,180 @@ describe("managed Clerk identity with real isolated D1", () => {
     const response = await worker.fetch(req(), env);
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain("private provider");
+  });
+  it("protects administrators from self-deletion and other-admin disable without changing data", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    await db
+      .prepare("UPDATE users SET role='admin' WHERE id=?")
+      .bind(user.id)
+      .run();
+    // An old in-memory free user cannot bypass the fresh deletion role check.
+    await expect(deleteManaged(env, user)).rejects.toThrow("owner-reviewed");
+    expect(mock.deleteUser).not.toHaveBeenCalled();
+    const call = (path: string, body: object, method = "POST") =>
+      worker.fetch(
+        new Request(origin + "/api" + path, {
+          method,
+          headers: {
+            authorization: "Bearer synthetic-fixture",
+            origin,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(body),
+        }),
+        env,
+      );
+    expect(
+      (await call("/account", { confirmation: "DELETE" }, "DELETE")).status,
+    ).toBe(403);
+    const second = "admin_" + subject;
+    await db
+      .prepare(
+        "INSERT INTO users(id,email,name,password_hash,role,verified,created_at) VALUES(?,?,'Protected admin','managed:clerk','admin',1,1)",
+      )
+      .bind(second, second + "@example.test")
+      .run();
+    expect(
+      (await call("/admin/users", { id: second, disabled: true })).status,
+    ).toBe(403);
+    expect(
+      await db
+        .prepare("SELECT role,disabled FROM users WHERE id=?")
+        .bind(second)
+        .first(),
+    ).toEqual({ role: "admin", disabled: 0 });
+    expect(
+      await db
+        .prepare("SELECT state FROM auth_identities WHERE subject=?")
+        .bind(subject)
+        .first("state"),
+    ).toBe("active");
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) n FROM audit_logs WHERE actor_id=? AND action LIKE 'account.delete.%'",
+        )
+        .bind(user.id)
+        .first("n"),
+    ).toBe(0);
+  });
+  it("cleans every owned workspace/access row, retains an atomic completion audit and treats provider 404 as deleted", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    await db.batch([
+      db
+        .prepare("INSERT INTO sessions VALUES(?,?,9999999999)")
+        .bind(subject, user.id),
+      db
+        .prepare("INSERT INTO email_verification_tokens VALUES(?,?,9999999999)")
+        .bind(subject, user.id),
+      db
+        .prepare("INSERT INTO password_reset_tokens VALUES(?,?,9999999999)")
+        .bind(subject, user.id),
+      db
+        .prepare("INSERT INTO user_preferences(user_id) VALUES(?)")
+        .bind(user.id),
+      db
+        .prepare(
+          "INSERT INTO saved_presets VALUES(?,?,'preset','Synthetic','{}',1)",
+        )
+        .bind(subject, user.id),
+      db
+        .prepare("INSERT INTO tool_history VALUES(?,?,'case','synthetic',1)")
+        .bind(subject, user.id),
+      db
+        .prepare(
+          "INSERT INTO server_favourites(user_id,server_id,created_at) VALUES(?,'hypixel',1)",
+        )
+        .bind(user.id),
+      db
+        .prepare(
+          "INSERT INTO pro_access_requests(id,user_id,created_at) VALUES(?,?,1)",
+        )
+        .bind(subject, user.id),
+      db
+        .prepare(
+          "INSERT INTO pro_grants(id,user_id,duration,granted_at) VALUES(?,?,'permanent',1)",
+        )
+        .bind(subject, user.id),
+    ]);
+    mock.deleteUser.mockRejectedValueOnce({ status: 404 });
+    await deleteManaged(env, user);
+    for (const table of [
+      "sessions",
+      "email_verification_tokens",
+      "password_reset_tokens",
+      "user_preferences",
+      "saved_presets",
+      "tool_history",
+      "server_favourites",
+      "pro_access_requests",
+      "pro_grants",
+    ])
+      expect(
+        await db
+          .prepare(`SELECT COUNT(*) n FROM ${table} WHERE user_id=?`)
+          .bind(user.id)
+          .first("n"),
+      ).toBe(0);
+    expect(
+      await db
+        .prepare("SELECT state,user_id FROM auth_identities WHERE subject=?")
+        .bind(subject)
+        .first(),
+    ).toEqual({ state: "deleted", user_id: null });
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) n FROM audit_logs WHERE target_id=? AND action='account.delete.completed'",
+        )
+        .bind(user.id)
+        .first("n"),
+    ).toBe(1);
+  });
+  it("rolls back deletion state if the start audit cannot be written", async () => {
+    const user = (await managedCurrent(req(), env))!;
+    await db.exec(
+      "CREATE TRIGGER reject_delete_audit BEFORE INSERT ON audit_logs WHEN NEW.action='account.delete.requested' BEGIN SELECT RAISE(ABORT,'synthetic audit outage'); END;",
+    );
+    try {
+      await expect(deleteManaged(env, user)).rejects.toThrow();
+      expect(mock.deleteUser).not.toHaveBeenCalled();
+      expect(
+        await db
+          .prepare("SELECT state FROM auth_identities WHERE subject=?")
+          .bind(subject)
+          .first("state"),
+      ).toBe("active");
+      expect(
+        await db
+          .prepare("SELECT disabled FROM users WHERE id=?")
+          .bind(user.id)
+          .first("disabled"),
+      ).toBe(0);
+    } finally {
+      await db.exec("DROP TRIGGER reject_delete_audit;");
+    }
+  });
+  it("persists unknown deletion tombstones and completion audits idempotently", async () => {
+    const webhookEnv = {
+      ...env,
+      CLERK_WEBHOOK_SIGNING_SECRET: "synthetic-webhook-fixture",
+    };
+    mock.verifyWebhook.mockResolvedValue({
+      type: "user.deleted",
+      data: { id: subject },
+    });
+    await managedWebhook(req(), webhookEnv);
+    await managedWebhook(req(), webhookEnv);
+    await expect(managedCurrent(req(), env)).rejects.toThrow("disabled");
+    expect(
+      await db
+        .prepare(
+          "SELECT COUNT(*) n FROM auth_identities WHERE subject=? AND state='deleted' AND user_id IS NULL",
+        )
+        .bind(subject)
+        .first("n"),
+    ).toBe(1);
   });
   it("verifies deletion webhooks and applies duplicate events idempotently", async () => {
     const user = (await managedCurrent(req(), env))!;

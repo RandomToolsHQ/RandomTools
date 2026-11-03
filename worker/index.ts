@@ -37,6 +37,7 @@ interface Env extends EmailEnvironment, ClerkEnvironment, AccessEnvironment {
   PAYMENTS_ENABLED: string;
   KOFI_VERIFICATION_TOKEN?: string;
   RATE_LIMIT_SECRET?: string;
+  PUBLIC_ACCOUNTS_ENABLED?: string;
 }
 type User = {
   id: string;
@@ -208,6 +209,13 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     await readBody(req.clone(), 65536);
     return managedWebhook(req, env);
   }
+  // Separate release switch; closing accounts must not block signed deletion
+  // delivery. Public-only Pages still denies all APIs and staging stays gated.
+  if (
+    env.ENVIRONMENT === "production" &&
+    env.PUBLIC_ACCOUNTS_ENABLED !== "true"
+  )
+    fail(503, "Public accounts have not been enabled");
   const accessEmail =
     env.ENVIRONMENT === "staging"
       ? await requireStagingAccess(req, env)
@@ -461,20 +469,26 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     });
   }
   if (path === "/account" && req.method === "DELETE") {
+    // Fresh current() role, never claims/client fields; protect the owner and
+    // all administrators against accidental self-deletion through the app.
+    if (u.role === "admin")
+      fail(
+        403,
+        "Administrator accounts require an owner-reviewed recovery or deletion process.",
+      );
+    await rate(env, "delete:" + u.id, 5);
     if (env.AUTH_PROVIDER === "clerk") {
       const body = z
         .object({ confirmation: z.literal("DELETE") })
         .strict()
         .parse(await parse(req));
       if (body.confirmation !== "DELETE") fail(400, "Confirm deletion");
-      await audit(env, u.id, "account.delete.requested", u.id);
       await deleteManaged(env, u as ManagedUser);
       return json({ message: "Account and saved data deleted" });
     }
     const b = z
       .object({ password: z.string().max(128) })
       .parse(await parse(req));
-    await rate(env, "delete:" + u.id, 5);
     if (!(await verifyPassword(b.password, u.password_hash)))
       fail(400, "Password is incorrect");
     await audit(env, u.id, "account.delete", u.id);
@@ -764,13 +778,19 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     if (path === "/admin/users" && req.method === "POST") {
       const b = z
         .object({ id: z.string(), disabled: z.boolean() })
+        .strict()
         .parse(await parse(req));
       if (b.id === u.id) fail(400, "Cannot disable your own account");
+      const target = await env.DB.prepare("SELECT role FROM users WHERE id=?")
+        .bind(b.id)
+        .first<{ role: string }>();
+      if (!target) fail(404, "Account not found");
+      if (target?.role === "admin")
+        fail(403, "Administrator accounts require owner-reviewed changes.");
       const updated = await env.DB.batch([
-        env.DB.prepare("UPDATE users SET disabled=? WHERE id=?").bind(
-          b.disabled ? 1 : 0,
-          b.id,
-        ),
+        env.DB.prepare(
+          "UPDATE users SET disabled=? WHERE id=? AND role='free'",
+        ).bind(b.disabled ? 1 : 0, b.id),
         env.DB.prepare("DELETE FROM sessions WHERE user_id=?").bind(b.id),
         env.DB.prepare(
           "INSERT INTO audit_logs SELECT ?,?,?,?,? WHERE EXISTS(SELECT 1 FROM users WHERE id=?)",

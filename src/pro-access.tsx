@@ -169,6 +169,10 @@ export function ProAccess() {
                 aria-describedby="pro-reason-help"
                 disabled={action.busy}
               />
+              <p className="muted">
+                {reason.length}/500 characters. Please leave out passwords,
+                verification codes and sensitive personal information.
+              </p>
               <p id="pro-reason-help" className="muted">
                 {reason.length}/500 characters. Only administrators can review
                 your reason. Please leave out sensitive information.

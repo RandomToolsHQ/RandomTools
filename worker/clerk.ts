@@ -53,7 +53,11 @@ export function clerkClient(env: ClerkEnvironment) {
   // Hosted staging is explicitly identified separately while retaining Secure cookies.
   if (
     env.ENVIRONMENT === "production" &&
-    !env.CLERK_SECRET_KEY.startsWith("sk_live_")
+    (!env.CLERK_SECRET_KEY.startsWith("sk_live_") ||
+      !env.CLERK_PUBLISHABLE_KEY.startsWith("pk_live_") ||
+      !env.CLERK_ISSUER.startsWith("https://") ||
+      new URL(env.CLERK_ISSUER).origin !== env.CLERK_ISSUER ||
+      new URL(env.CLERK_ISSUER).hostname.endsWith(".accounts.dev"))
   )
     throw new AuthError(
       503,
@@ -253,19 +257,36 @@ export async function managedWebhook(req: Request, env: ClerkEnvironment) {
     throw new AuthError(401, "Invalid webhook");
   }
   if (event.type === "user.deleted" && event.data.id) {
-    // Idempotent tombstone prevents delayed/replayed events from recreating data.
-    await env.DB.batch([
-      env.DB.prepare(
-        "UPDATE auth_identities SET state='deleted' WHERE issuer=? AND subject=?",
-      ).bind(env.CLERK_ISSUER, event.data.id),
-      env.DB.prepare(
-        "DELETE FROM users WHERE id=(SELECT user_id FROM auth_identities WHERE issuer=? AND subject=?)",
-      ).bind(env.CLERK_ISSUER, event.data.id),
-    ]);
+    // An authentic provider deletion must be honored, even if initiated outside
+    // this app. Retain a tombstone even when the event precedes first provisioning.
+    await finishManagedDeletion(env, env.CLERK_ISSUER, event.data.id);
   }
   return new Response(JSON.stringify({ received: true }), {
     headers: { "Content-Type": "application/json" },
   });
+}
+
+async function finishManagedDeletion(
+  env: ClerkEnvironment,
+  issuer: string,
+  subject: string,
+) {
+  await env.DB.batch([
+    env.DB.prepare(
+      "INSERT OR IGNORE INTO audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,user_id,'account.delete.completed',user_id,? FROM auth_identities WHERE issuer=? AND subject=? AND user_id IS NOT NULL",
+    ).bind(
+      "account_deleted_" + digest(issuer + "\n" + subject),
+      now(),
+      issuer,
+      subject,
+    ),
+    env.DB.prepare(
+      "INSERT INTO auth_identities(issuer,subject,state,created_at) VALUES(?,?,'deleted',?) ON CONFLICT(issuer,subject) DO UPDATE SET state='deleted'",
+    ).bind(issuer, subject, now()),
+    env.DB.prepare(
+      "DELETE FROM users WHERE id=(SELECT user_id FROM auth_identities WHERE issuer=? AND subject=?)",
+    ).bind(issuer, subject),
+  ]);
 }
 
 export async function deleteManaged(env: ClerkEnvironment, user: ManagedUser) {
@@ -274,19 +295,45 @@ export async function deleteManaged(env: ClerkEnvironment, user: ManagedUser) {
       403,
       "Sign in again before deleting your account (within five minutes).",
     );
+  const fresh = await env.DB.prepare(
+    "SELECT u.role FROM users u JOIN auth_identities a ON a.user_id=u.id WHERE u.id=? AND a.issuer=? AND a.subject=? AND a.state='active' AND u.disabled=0",
+  )
+    .bind(user.id, user.clerk.issuer, user.clerk.subject)
+    .first<{ role: string }>();
+  if (!fresh) throw new AuthError(403, "Account access is disabled");
+  if (fresh.role === "admin")
+    throw new AuthError(
+      403,
+      "Administrator accounts require an owner-reviewed recovery or deletion process.",
+    );
   // Disable locally first. If the provider is unavailable, access stays closed;
   // the operator can retry completion rather than silently leaving active data.
-  await env.DB.batch([
+  const started = await env.DB.batch([
     env.DB.prepare(
-      "UPDATE auth_identities SET state='deleting' WHERE issuer=? AND subject=?",
-    ).bind(user.clerk.issuer, user.clerk.subject),
-    env.DB.prepare("UPDATE users SET disabled=1 WHERE id=?").bind(user.id),
-  ]);
-  await provider(() => clerkClient(env).users.deleteUser(user.clerk.subject));
-  await env.DB.batch([
+      "INSERT INTO audit_logs(id,actor_id,action,target_id,created_at) SELECT ?,id,'account.delete.requested',id,? FROM users WHERE id=? AND role='free' AND disabled=0",
+    ).bind(crypto.randomUUID(), now(), user.id),
     env.DB.prepare(
-      "UPDATE auth_identities SET state='deleted' WHERE issuer=? AND subject=?",
-    ).bind(user.clerk.issuer, user.clerk.subject),
-    env.DB.prepare("DELETE FROM users WHERE id=?").bind(user.id),
+      "UPDATE auth_identities SET state='deleting' WHERE issuer=? AND subject=? AND user_id=? AND state='active' AND EXISTS(SELECT 1 FROM users WHERE id=? AND role='free' AND disabled=0)",
+    ).bind(user.clerk.issuer, user.clerk.subject, user.id, user.id),
+    env.DB.prepare(
+      "UPDATE users SET disabled=1 WHERE id=? AND role='free' AND EXISTS(SELECT 1 FROM auth_identities WHERE issuer=? AND subject=? AND user_id=? AND state='deleting')",
+    ).bind(user.id, user.clerk.issuer, user.clerk.subject, user.id),
   ]);
+  if (!started[1].meta.changes || !started[2].meta.changes)
+    throw new AuthError(403, "Account deletion was not authorized");
+  await provider(async () => {
+    try {
+      await clerkClient(env).users.deleteUser(user.clerk.subject);
+    } catch (error) {
+      // Already deleted is a successful terminal state, not an active account.
+      if (
+        !error ||
+        typeof error !== "object" ||
+        !("status" in error) ||
+        Number(error.status) !== 404
+      )
+        throw error;
+    }
+  });
+  await finishManagedDeletion(env, user.clerk.issuer, user.clerk.subject);
 }
