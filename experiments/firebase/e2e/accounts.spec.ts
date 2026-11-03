@@ -92,6 +92,32 @@ test.beforeEach(async ({ page }) => {
     return route.fulfill({ json: { message: "Synthetic operation complete" } });
   });
 });
+test("Google provider initialization failure is visible and never grants account access", async ({
+  page,
+  context,
+}) => {
+  // Fail the external provider deliberately: no genuine Google identity or
+  // security confirmation is used. This is not successful OAuth enrollment.
+  await context.route("**/*.firebaseapp.com/**", (r) =>
+    r.fulfill({
+      contentType: "text/html",
+      body: "<p>Synthetic OAuth boundary</p>",
+    }),
+  );
+  await context.route("**/apis.google.com/**", (r) => r.abort());
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sign in with Google" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "could not complete this action",
+  );
+  await expect(
+    page.getByRole("button", { name: "Sign in with Google" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("heading", { name: "Populated workspace" }),
+  ).toHaveCount(0);
+});
+
 test("private account forms are accessible and recovery requests do not reveal membership", async ({
   page,
 }) => {

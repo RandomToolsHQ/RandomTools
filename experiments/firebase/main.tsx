@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import {
   initializeAuth,
   inMemoryPersistence,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
   signInWithPopup,
   createUserWithEmailAndPassword,
@@ -21,7 +22,10 @@ import "./style.css";
 const config = JSON.parse(import.meta.env.VITE_FIREBASE_POC_CONFIG || "null");
 const app = config ? initializeApp(config) : null;
 const auth = app
-  ? initializeAuth(app, { persistence: inMemoryPersistence })
+  ? initializeAuth(app, {
+      persistence: inMemoryPersistence,
+      popupRedirectResolver: browserPopupRedirectResolver,
+    })
   : null;
 // No emulator URL, unsigned token mode or authentication bypass exists in this build.
 async function api(path: string, body?: unknown, method?: string) {
