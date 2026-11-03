@@ -1,5 +1,14 @@
 # Cloudflare staging — current deployment
 
+## Phase 10 candidate — not deployed
+
+The IP Intelligence Lookup endpoint is disabled unless IP_LOOKUP_ENABLED is
+exactly true. No hosted flag, binding, schema or deployment was changed during
+development. It reuses the existing rate_limits table, requires no provider key
+and keeps existing gateway/authentication/fresh Pro checks. Validate only in an
+approved restricted environment after CI; never expose the public account/API
+surface. See [provider and deployment requirements](IP-INTELLIGENCE.md).
+
 ## Phase 8 — current restricted account candidate, 3 November 2026
 
 Private URL: https://randomtools-web-staging.pages.dev/. API source 8067d9c is

@@ -48,7 +48,23 @@ is still required; no paid Cloud Functions deletion webhook has been introduced.
 
 ## Credential decision — no private key generated
 
-### Phase 9.1 approved scope (not applied)
+### Phase 9.1 current state — 4 November 2026
+
+Update superseding the historical notes below: the owner completed Google's
+device verification and the earlier Cloud Shell source authorization succeeded.
+IAM and IAM Credentials APIs were enabled with billingEnabled=false. The helper
+was transferred and its checksum verified, but its setup command was not run;
+this workflow issued no temporary grants or impersonated tokens. The current
+console inventory lists only the existing SDK service account, with No keys.
+Full project IAM policy/custom-role verification remains pending; do not equate
+absence of a service account with verified cleanup of every binding.
+
+The earlier two-hour authorization window is no longer current. A fresh scoped
+approval is required before new grants or a privileged session. No private key
+has been generated. `scripts/firebase-poc-keyless.py` records a baseline, refuses
+pre-existing resources/ledgers without review and prepares exact cleanup.
+
+### Historical approval preparation (before device verification)
 
 Read-only rechecks found the same Cloudflare deployment IDs and D1 isolation.
 Firebase still displays Spark, $0/month. Google Cloud's linked-account screen

@@ -1,28 +1,29 @@
 # RandomTools HQ
 
-**Roadmap: free first, manually approved Pro.** All 18 free tools remain available.
+**Roadmap: free first, manually approved Pro.** All 21 free tools remain available.
 Authenticated users can request Pro; administrators can review requests or grant
 7-day, 30-day or permanent access directly. Permanent grants remain revocable.
 Payments, checkout, payment linking and paid subscription administration are
 disabled in code, regardless of environment flags. Historical payment code/data
 is preserved for a separately reviewed future change. No provider activation is
 required. See [admin operations](docs/ADMIN-SETUP.md) and [PROGRESS.md](PROGRESS.md).
-This change is developed on `codex/manual-pro-access`; existing hosted deployments
-are unchanged until an explicitly reviewed staging release.
+Current release preparation is on `codex/phase10-release-readiness`. The isolated
+Firebase experiment does not replace the restricted Clerk environment.
 
 **Public tools staging:** [randomtools-preview.pages.dev](https://randomtools-preview.pages.dev).
-All 18 free tools are available; accounts, admin and Pro workspaces are restricted
+All 21 free tools are available; accounts, admin and Pro workspaces are restricted
 to controlled testing. No purchased domain or live payments are required. See
 [the current staging guide](docs/STAGING.md) for the exact deployment boundary.
 The [Phase 2 audit](docs/PHASE2.md) records tool fixes, the twelve Pro capabilities,
 security coverage and remaining controlled-authentication/CPU testing gates.
 
-Hosted authentication is being migrated to Clerk Hobby. Read
+Restricted hosted authentication uses Clerk Hobby. Read
 [CLERK.md](docs/CLERK.md) and [PROGRESS.md](PROGRESS.md) before deployment;
 the local password adapter described below is retained for regression tests.
-The staging schema is provisioned; hosted account sign-in remains gated.
+Hosted account sign-in remains behind the private staging gateway. Firebase
+Spark is a separate synthetic-only experiment; no account migration is approved.
 
-A React / TypeScript toolkit with 18 browser utilities, a D1-backed account API and audited manual Pro access. This is an implementation in progress, **not a production-ready release**. See [PROGRESS.md](PROGRESS.md) for the exact verification and release gaps.
+A React / TypeScript toolkit with 21 free utilities, a D1-backed account API and audited manual Pro access. This is an implementation in progress, **not a production-ready account release**. See [PROGRESS.md](PROGRESS.md) for the exact verification and release gaps.
 
 ## Local development (Windows PowerShell)
 
@@ -50,13 +51,18 @@ npm.cmd run test:e2e
 
 ## Product
 
-All free tools process inputs locally. Local favourites and theme use localStorage; authentication never does. Free utilities include JSON, Base64, URL, Unix timestamps, UUIDs, text diff, regex (isolated worker timeout), HTML entities, passwords, QR codes, text counts, case, colours, random integers, image compression, SHA-256 files and Discord utilities.
+Free transformations process inputs locally. Minecraft status checks contact the disclosed external status provider; browsing uses a bundled source-linked catalog. Favourites, recent tools and theme use localStorage. Free utilities include JSON, Base64, URL, Unix timestamps, UUIDs, text diff, regex (isolated worker timeout), HTML entities, passwords, QR codes, text counts, case, colours, random integers, image compression, SHA-256 files, Discord utilities, Minecraft browsing, Roblox username ideas and fictional test identities.
 
 Accounts have verification/resend, reset, password changes, session revocation, export and deletion. Development links are returned directly and explicitly labelled. An optional Resend transport supports production delivery after the owner configures real credentials and a verified sender; otherwise requests fail closed. See [email configuration](docs/EMAIL.md).
 
 Pro storage is enforced by the Worker. The Pro workspace includes batch images/hashes, canonical JSON comparison, bulk QR SVG output, multi-case regex with captures/replacements, batch text transformations, presets, synced preferences, TXT/JSON/CSV exports, multi-file processing, saved text workflows and private history. Client-only batch operations offer convenience rather than a security boundary; open-source browser processing cannot be made inaccessible to someone inspecting the code. No claim of unlimited processing is made.
 
-Pricing is configured in `src/catalog.ts`: Free A$0, proposed monthly A$4.99 AUD and yearly A$39.99 AUD. Checkout is disabled; yearly is not purchasable.
+The thirteenth planned Pro capability, [IP Intelligence Lookup](docs/IP-INTELLIGENCE.md),
+is implemented on this branch and disabled by default at the backend. It is not
+publicly deployed. Missing provider attributes are explicitly unavailable.
+
+Historical pricing constants remain archived in `src/catalog.ts`. Pro access is
+manually approved; checkout and payment processing are hard-disabled.
 
 ## Hosting
 

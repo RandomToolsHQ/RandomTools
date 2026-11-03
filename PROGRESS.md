@@ -1,5 +1,40 @@
 # RandomTools implementation status
 
+## Phase 10 release candidate — 4 November 2026
+
+Branch `codex/phase10-release-readiness` continues 5947737 without changing public,
+Clerk or Firebase deployments. Founder/Admin, genuine data, password-vault
+isolation and payment hard stops remain untouched.
+
+Implemented the thirteenth planned Pro capability, IP Intelligence Lookup,
+behind a default-off Worker flag. Fresh D1 Pro checks precede a fixed free HTTPS
+provider request. Public-IP validation, consent, timeout/size limits, per-user
+and shared counters, cooldown, no-store responses and no search persistence are
+tested. Missing fields are unavailable; country timezone candidates are not an
+exact timezone. Provider terms/privacy and deployment gates are documented in
+docs/IP-INTELLIGENCE.md. No provider account or payment method was configured.
+
+Fixed saved workflow configuration validation, corrupt-JSON loading, preservation
+of empty regex flags/replacement and stale exported results. Added a busy-state
+guard for batch file inputs and stronger WebKit readiness assertions. The prior
+WebKit hash/image batch failure now passes individually. Local unit/integration
+suite: 175 passing tests across 24 files. Full browser/CI validation of this
+candidate is in progress; results will be recorded after the runs finish.
+
+Phase 9.2 fixed missing Firebase rate-limit-secret handling to fail closed
+(753d257). Positive hosted Firebase lifecycle and representative CPU validation
+remain blocked; no authenticated success CPU quantiles are claimed. Spark is a
+possible no-domain alternative, but public launch/migration remain NO-GO until
+hosted lifecycle, revocation, recovery/deletion and CPU gates are complete.
+
+Phase 9.1 update superseding the historical entry below: owner device verification
+and earlier Cloud Shell source authorization succeeded. IAM/IAM Credentials APIs
+were enabled with billingEnabled=false. The prepared helper was not executed;
+this workflow issued no temporary grants or impersonated tokens. Current console
+inventory shows only the original SDK service account with No keys. Full project
+IAM policy/custom-role verification remains pending. The old two-hour approval
+window is no longer current; renewed scoped approval is needed before new grants.
+
 ## React Router compatibility upgrade — 4 November 2026
 
 Reviewed package.json, the lockfile and every routing import on the existing
@@ -15,6 +50,9 @@ react-router directly, pinned to 8.5.1. Existing React and type versions meet
 the peer requirements. Documented/enforced Node minimum is now 22.22.0.
 No route paths, Clerk configuration, API permissions or deployments were changed.
 The Firebase POC has its own independent frontend and no React Router imports.
+
+Commit 5947737 GitHub validation run 41680865066 passed, including the then-current
+unit, browser, Firebase UI/emulator, build and deployment dry-run checks.
 
 
 ## Phase 9.1 — keyless hosted validation in progress, 3 November 2026

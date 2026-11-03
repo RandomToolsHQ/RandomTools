@@ -1,5 +1,24 @@
 # Launch readiness — 3 November 2026
 
+## Phase 10 candidate boundary — 4 November 2026
+
+The release-readiness branch adds default-off IP Intelligence Lookup and saved
+workflow fixes. No deployment, public signup, identity migration or main merge
+is included. Clerk Founder/Admin access and all existing environments remain
+unchanged. Firebase Spark accepts the isolated pages.dev authorized domain and
+requires no domain purchase for this POC, but positive hosted verification,
+recovery, disabled/deleted/revoked-user tests and representative CPU measurements
+remain required. Current recommendation: continue the restricted experiment;
+NO-GO for a public account launch or provider migration.
+
+Before any future authentication release: pass the full hosted lifecycle and
+ownership matrix, verify IAM cleanup, test recovery/deletion reconciliation and
+synthetic migration rehearsal, measure repeated accepted authenticated workloads,
+back up/restore D1, and obtain explicit owner launch approval. Keep existing
+Clerk identity mappings and Founder privileges intact. Roll back to the recorded
+Pages/Worker versions, disable new signup and revoke affected application
+sessions; do not automatically reverse identity mappings or delete account data.
+
 ## Approved public free-tools release
 
 The owner approved the exact frozen artifact identified below. It is now live at

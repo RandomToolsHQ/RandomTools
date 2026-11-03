@@ -1,0 +1,58 @@
+.ip-intelligence {
+  margin: 24px 0;
+  min-width: 0;
+}
+.dashboard-grid > .ip-intelligence {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.ip-intelligence form {
+  display: grid;
+  gap: 12px;
+}
+.ip-intelligence input:not([type="checkbox"]) {
+  width: 100%;
+  box-sizing: border-box;
+}
+.ip-intelligence .consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+.ip-intelligence .consent input {
+  flex: none;
+  width: 18px;
+  margin: 4px 0;
+}
+.ip-intelligence .ip-results dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ip-intelligence .ip-results dl > div {
+  border-bottom: 1px solid var(--border, #777);
+  padding: 8px 0;
+  min-width: 0;
+}
+.ip-intelligence dt {
+  font-weight: 600;
+}
+.ip-intelligence dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.ip-intelligence .ip-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ip-intelligence [role="alert"] {
+  border-left: 3px solid currentColor;
+  padding: 10px;
+}
+@media (max-width: 600px) {
+  .ip-intelligence .ip-results dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

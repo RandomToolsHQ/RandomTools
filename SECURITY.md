@@ -1,5 +1,26 @@
 # Security
 
+## Phase 9.2 / Phase 10 release candidate
+
+Firebase POC configuration now fails closed if its rate-limit signing secret is
+missing. Signature, issuer, audience, expiry, live provider revocation/disabled
+checks, application sessions, D1 ownership and fresh Pro/admin checks remain
+required. The prototype is synthetic-only and is not approved for public signup.
+Hosted positive lifecycle and CPU evidence remains incomplete; local tests are
+not a substitute. See [Firebase validation](docs/FIREBASE-POC.md).
+
+IP Intelligence Lookup is disabled by default. Backend access requires fresh
+Pro authorization after the existing authentication/session/gateway middleware.
+Only canonical public IPv4/IPv6 literals are accepted; URLs, ports, hostnames,
+mapped/private/reserved addresses are rejected. The outbound endpoint is fixed,
+redirects fail, responses are capped at 32 KiB and requests time out after 3.5 s.
+Atomic per-user and shared D1 counters bound provider requests; provider 429s
+trigger a shared cooldown. No searched IP or provider result is stored in D1,
+history, analytics or application logs. Responses are no-store. The provider may
+log requests, which is disclosed before submission. Missing fields and uncertain
+proxy classifications must never be represented as verified physical identity.
+The retained public API-denial guard remains authoritative for the public site.
+
 ## Free-first manual access
 
 Payments and paid membership routes are hard-disabled in every environment;

@@ -1,7 +1,15 @@
 # Free tools expansion — restricted staging and public candidate
 
-The branch adds three catalog entries (21 total) and replaces the password UI
-with an advanced local generator. No deployment or main merge is included.
+Phase 7 added three catalog entries (21 total) and an advanced local password
+generator. That frozen public release is deployed; the Phase 10 account/Pro
+candidate does not change the public deployment or merge main.
+
+The Phase 10 audit retains every free tool. Automated coverage exercises text
+conversions, local file/hash/image and QR output, download content and stale-file
+rejection, advanced passwords/identities/usernames, consent-based Minecraft
+lookups, local favourites/recents, search, keyboard navigation, blocked device
+storage, desktop/mobile overflow and WCAG A/AA checks in both themes. External
+provider replies are fixtures; browser emulation is not a physical-device audit.
 
 ## External data and limitations
 
@@ -60,4 +68,5 @@ destructive: first export it and obtain explicit approval if it has user data.
 CI never applies remote migrations. Phase 7 separately applied 0005 only to the
 existing restricted staging database after a verified backup/restore. Hosted
 favourite ownership/export/deletion checks passed and synthetic rows were removed.
-The public artifact has no D1 binding or account access and remains undeployed.
+The deployed public artifact has no D1 binding or account access. Its deployment
+is recorded in LAUNCH-READINESS.md and remains unchanged during Phase 10 work.

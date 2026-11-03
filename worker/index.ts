@@ -22,6 +22,7 @@ import {
 import { tools, pricing } from "../src/catalog";
 import { deliverEmail, emailMode, type EmailEnvironment } from "./email";
 import { readBody, BodyTooLarge } from "./body";
+import { ipIntelligenceRoute } from "./ip-intelligence";
 import {
   digest,
   equal,
@@ -588,6 +589,7 @@ async function handle(req: Request, env: Env, ctx?: ExecutionContext) {
     });
   }
   if (path.startsWith("/pro/")) {
+    if (path === "/pro/ip-lookup") return ipIntelligenceRoute(req, env, u);
     if (!(await pro(env, u))) fail(403, "An active Pro membership is required");
     if (path === "/pro/preferences") {
       if (req.method === "GET")

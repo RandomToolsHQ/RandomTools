@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { api } from "./api";
@@ -6,6 +6,12 @@ import { convert, download } from "./engines";
 import { runRegex } from "./regex";
 import { processFile } from "./files";
 import { imageExtension } from "./image-core";
+import IpIntelligenceLookup from "./IpIntelligence";
+import {
+  runTextWorkflow,
+  workflowSteps,
+  workspaceConfiguration,
+} from "./text-workflow";
 type Action = (fn: () => Promise<any>) => Promise<any>;
 export default function ProWorkspace({
   action,
@@ -26,6 +32,20 @@ export default function ProWorkspace({
   const [regexPattern, setRegexPattern] = useState("(?<word>\\w+)");
   const [regexFlags, setRegexFlags] = useState("g");
   const [replacement, setReplacement] = useState("$<word>");
+  useEffect(
+    () => setResult(""),
+    [
+      text,
+      other,
+      operation,
+      mode,
+      steps,
+      regexPattern,
+      regexFlags,
+      replacement,
+      fileMode,
+    ],
+  );
   const presets = useQuery({
     queryKey: ["presets"],
     queryFn: () => api("/pro/presets"),
@@ -71,18 +91,7 @@ export default function ProWorkspace({
         }
         output = JSON.stringify(results, null, 2);
       } else if (operation === "workflow") {
-        const list = steps.split(",").map((s) => s.trim());
-        if (
-          list.length > 10 ||
-          list.some(
-            (s) => !["upper", "lower", "title", "slug", "trim"].includes(s),
-          )
-        )
-          throw Error("Use up to 10 steps: upper, lower, title, slug, trim.");
-        output = list.reduce(
-          (v, s) => (s === "trim" ? v.trim() : convert("case", v, s, "")),
-          text,
-        );
+        output = runTextWorkflow(text, steps);
       } else if (operation === "qr") {
         const lines = text.split("\n").filter(Boolean);
         if (lines.length > 50 || lines.some((l) => l.length > 2000))
@@ -111,7 +120,7 @@ export default function ProWorkspace({
     });
   }
   async function files(files: FileList | null) {
-    if (!files) return;
+    if (!files || busy) return;
     setResult("");
     await action(async () => {
       if (files.length > 20) throw Error("Limit: 20 files per batch.");
@@ -164,6 +173,7 @@ export default function ProWorkspace({
       disabled={busy}
       aria-busy={busy}
     >
+      <IpIntelligenceLookup />
       <div className="panel">
         <h2>Transformation workspace</h2>
         <p>
@@ -355,11 +365,13 @@ export default function ProWorkspace({
         </label>
         <button
           className="primary"
+          disabled={!name.trim()}
           onClick={() =>
-            void action(() =>
-              api("/pro/presets", {
+            void action(async () => {
+              if (operation === "workflow") workflowSteps(steps);
+              return api("/pro/presets", {
                 kind: operation === "workflow" ? "workflow" : "preset",
-                name,
+                name: name.trim(),
                 data: {
                   operation,
                   mode,
@@ -368,8 +380,8 @@ export default function ProWorkspace({
                   regexFlags,
                   replacement,
                 },
-              }),
-            )
+              });
+            })
           }
         >
           Save current configuration
@@ -378,16 +390,23 @@ export default function ProWorkspace({
           <div key={p.id}>
             <button
               className="secondary"
-              onClick={() => {
-                const d = JSON.parse(p.data);
-                setOperation(d.operation || "case");
-                setMode(d.mode || "upper");
-                setSteps(d.steps || "lower,slug");
-                setRegexPattern(d.regexPattern || "(?<word>\\w+)");
-                setRegexFlags(d.regexFlags || "g");
-                setReplacement(d.replacement || "$<word>");
-                setName(p.name);
-              }}
+              onClick={() =>
+                void action(async () => {
+                  const d = workspaceConfiguration(p.data);
+                  setResult("");
+                  setOperation(d.operation);
+                  setMode(d.mode);
+                  setSteps(d.steps);
+                  setRegexPattern(d.regexPattern);
+                  setRegexFlags(d.regexFlags);
+                  setReplacement(d.replacement);
+                  setName(p.name);
+                  return {
+                    message:
+                      "Configuration loaded. Run it to generate a new result.",
+                  };
+                })
+              }
             >
               {p.name} · load
             </button>

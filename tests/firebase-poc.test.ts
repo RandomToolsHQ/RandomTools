@@ -7,7 +7,14 @@ import {
   expect,
   vi,
 } from "vitest";
-import { readFile, readdir, mkdtemp, mkdir, unlink, rmdir } from "node:fs/promises";
+import {
+  readFile,
+  readdir,
+  mkdtemp,
+  mkdir,
+  unlink,
+  rmdir,
+} from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -302,6 +309,15 @@ it("fails closed before provider calls when the rate-limit secret is absent or m
     expect((await call("/session", token, {})).status).toBe(503);
   }
   expect(lookupCount).toBe(0);
+});
+it("requires a verified owned application session and fresh Pro for Firebase IP lookup", async () => {
+  const raw = await jwt({ role: "admin", pro: true }),
+    body = { ip: "1.1.1.1", consent: true };
+  expect((await call("/pro/ip-lookup", raw, body)).status).toBe(401);
+  const session = await login(raw);
+  expect(
+    (await call("/pro/ip-lookup", raw, body, "POST", session.cookie)).status,
+  ).toBe(403);
 });
 it("never links a matching legacy/Clerk email or accepts Firebase custom claims as Admin/Pro", async () => {
   await db

@@ -19,6 +19,7 @@ import {
 } from "../../worker/pro-access";
 import { digest, now, token } from "../../worker/security";
 import { readBody, BodyTooLarge } from "../../worker/body";
+import { ipIntelligenceRoute } from "../../worker/ip-intelligence";
 
 type Env = FirebaseEnv & AccessEnvironment;
 const cookieName = "__Host-rt_firebase_poc";
@@ -309,6 +310,7 @@ async function handle(req: Request, env: Env) {
     });
   }
   if (path.startsWith("/pro/")) {
+    if (path === "/pro/ip-lookup") return ipIntelligenceRoute(req, env, user);
     if (!(await hasPro(env, user)))
       throw new FirebaseError(403, "Pro access required");
     if (path === "/pro/presets") {

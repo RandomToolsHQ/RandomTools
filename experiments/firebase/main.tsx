@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./style.css";
+import IpIntelligenceLookup from "../../src/IpIntelligence";
 
 const config = JSON.parse(import.meta.env.VITE_FIREBASE_POC_CONFIG || "null");
 const app = config ? initializeApp(config) : null;
@@ -407,6 +408,7 @@ function Experiment() {
                   </button>
                 </form>
               </section>
+              {me.pro && <IpIntelligenceLookup request={api} />}
               {me.pro && (
                 <section>
                   <h2>Populated workspace</h2>

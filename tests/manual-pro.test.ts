@@ -98,6 +98,24 @@ beforeEach(async () => {
       .run();
   }
 });
+it("requires authentication and fresh entitlement for direct IP lookup API access", async () => {
+  const input = { ip: "1.1.1.1", consent: true };
+  expect((await call("/pro/ip-lookup", "", input)).status).toBe(401);
+  expect(
+    (await call("/pro/ip-lookup", "owner", { ...input, role: "admin" })).status,
+  ).toBe(403);
+  expect((await call("/pro/ip-lookup", "other", input)).status).toBe(403);
+  const g = await grant("owner", "7d");
+  // The integration test environment deliberately does not enable outbound
+  // provider calls: an authorized request reaches the fail-closed feature gate.
+  expect((await call("/pro/ip-lookup", "owner", input)).status).toBe(503);
+  expect((await call("/pro/ip-lookup", "admin", input)).status).toBe(503);
+  await call("/admin/pro-access/revoke", "admin", {
+    id: g.grantId,
+    reason: "Synthetic authorization test",
+  });
+  expect((await call("/pro/ip-lookup", "owner", input)).status).toBe(403);
+});
 it("keeps free server favourites account-owned, deduplicated, exported and deleted", async () => {
   const path = "/account/server-favourites";
   expect((await call(path, "")).status).toBe(401);

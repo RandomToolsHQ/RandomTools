@@ -180,6 +180,7 @@ test("Pro browser engines run with an entitled account API fixture", async ({
   await expect
     .poll(() => page.getByLabel("Result", { exact: true }).inputValue())
     .toContain("<svg");
+  await expect(page.locator("input[type=file]")).toBeEnabled();
   await page.locator("input[type=file]").setInputFiles([
     { name: "a.txt", mimeType: "text/plain", buffer: Buffer.from("hello") },
     { name: "b.txt", mimeType: "text/plain", buffer: Buffer.from("world") },

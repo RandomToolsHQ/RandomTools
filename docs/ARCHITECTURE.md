@@ -11,6 +11,23 @@ can create a grant. The 12 Pro capabilities are retained; browser-local processi
 remains convenience gating, while private stored data is protected server-side.
 Payment source and records remain archived/inactive behind hard route stops.
 
+The thirteenth planned capability is IP Intelligence Lookup. The shared Worker
+module requires fresh database Pro authorization, exact Origin, JSON and explicit
+provider disclosure consent. It accepts only public IP literals and uses a fixed
+free HTTPS provider endpoint with bounded responses, no redirects, a timeout and
+D1 per-user/shared rate counters. No searches or results are persisted. It is
+disabled unless IP_LOOKUP_ENABLED is exactly true; no hosted configuration was
+changed. See [IP-INTELLIGENCE.md](IP-INTELLIGENCE.md).
+
+Saved text workflows now validate configurations before applying them, retain
+ordered transformation steps and clear stale results when inputs change. Empty
+regex flags and replacement text are preserved when loading saved configurations.
+
+React Router 8.5.1 supplies the existing declarative BrowserRouter/Routes/Route
+architecture. The obsolete react-router-dom wrapper was removed, without path
+or server authorization changes. Node 22.22+ is required. Firebase's isolated
+frontend remains independent of this router.
+
 Hosted accounts now use Clerk's frontend SDK and server-verified short-lived
 session tokens; D1 retains internal users, roles and entitlements. See
 [CLERK.md](CLERK.md) for the additive identity migration and deployment gates.
