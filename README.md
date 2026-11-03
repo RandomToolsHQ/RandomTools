@@ -26,7 +26,7 @@ A React / TypeScript toolkit with 18 browser utilities, a D1-backed account API 
 
 ## Local development (Windows PowerShell)
 
-Use Node 22.12+ and npm. The `.cmd` suffix works when PowerShell blocks npm.ps1.
+Use Node 22.22+ and npm. The `.cmd` suffix works when PowerShell blocks npm.ps1.
 
 ```powershell
 npm.cmd install

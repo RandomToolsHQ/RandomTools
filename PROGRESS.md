@@ -1,5 +1,22 @@
 # RandomTools implementation status
 
+## React Router compatibility upgrade — 4 November 2026
+
+Reviewed package.json, the lockfile and every routing import on the existing
+codex/firebase-free-poc branch. The app used react-router-dom 7.18.5 (and its
+react-router 7.18.5 dependency) with React/React DOM 19.3.1. Routing is declarative
+BrowserRouter + Routes/Route, including /tools/:id, account/admin routes and
+public-tools-only account restrictions. No data loaders or React Router framework
+plugin is used. Server-side permissions remain authoritative.
+
+Confirmed react-router 8.5.1 is npm's stable latest release. react-router-dom
+ends at 7.18.5: v8 removes the compatibility package, so imports now use
+react-router directly, pinned to 8.5.1. Existing React and type versions meet
+the peer requirements. Documented/enforced Node minimum is now 22.22.0.
+No route paths, Clerk configuration, API permissions or deployments were changed.
+The Firebase POC has its own independent frontend and no React Router imports.
+
+
 ## Phase 9.1 — keyless hosted validation in progress, 3 November 2026
 
 Rechecked branch/CI and Cloudflare deployment IDs: public, Clerk Pages/API and

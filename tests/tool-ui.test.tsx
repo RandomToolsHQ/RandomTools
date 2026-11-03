@@ -8,7 +8,7 @@ import {
   render,
   screen,
 } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router";
 import ToolPage from "../src/ToolPage";
 const mock = vi.hoisted(() => ({ processFile: vi.fn() }));
 vi.mock("../src/files", () => ({ processFile: mock.processFile }));

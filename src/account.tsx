@@ -5,7 +5,7 @@ import {
   ManagedSecurity,
 } from "./auth";
 import { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api";
 import { download } from "./engines";

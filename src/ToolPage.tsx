@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams } from "react-router";
 import QRCode from "qrcode";
 import { Copy, Download, RotateCcw, ShieldCheck, Play } from "lucide-react";
 import { tools } from "./catalog";

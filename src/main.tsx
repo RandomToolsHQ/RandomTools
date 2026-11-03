@@ -9,7 +9,7 @@ import {
   Link,
   useLocation,
   useParams,
-} from "react-router-dom";
+} from "react-router";
 import {
   QueryClient,
   QueryClientProvider,

@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "dev:api": "wrangler dev --config wrangler.api.toml",
@@ -38,7 +41,7 @@
     "qrcode": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "react-router-dom": "latest",
+    "react-router": "8.5.1",
     "zod": "latest"
   },
   "devDependencies": {

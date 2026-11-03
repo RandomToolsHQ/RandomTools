@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { setTokenProvider } from "./api";
 import { publicToolsOnly } from "./deployment";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 export const managedAuth =
   !publicToolsOnly && !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 let signOutProvider: (() => Promise<void>) | null = null;

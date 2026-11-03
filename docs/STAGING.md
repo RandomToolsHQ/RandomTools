@@ -232,7 +232,7 @@ revocation, signed deletion synchronization and the ownership-review procedure.
 
 ## Reproduce the public artifact
 
-From the existing repository root, with Node 22.12+ and the lockfile:
+From the existing repository root, with Node 22.22+ and the lockfile:
 
 ```powershell
 npm.cmd ci
