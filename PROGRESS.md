@@ -1,5 +1,32 @@
 # RandomTools implementation status
 
+## Approved Phase 7 public-only release — 3 November 2026
+
+The owner explicitly approved only frozen artifact SHA256
+41e903db978d3ab79af68175bc05af8fa99cc4270d52a23b714ea94428ba7bc9.
+Recomputed the complete 51-file manifest before deployment and matched the exact
+approved files; no rebuild. Deployed source a04a522 to randomtools-preview Pages:
+81de8536-ed2f-4204-941b-ada7fcba1c2a. Live: https://randomtools-preview.pages.dev/.
+Previous deployment d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34 remains available for
+immediate rollback. Rollback was not required.
+
+All 21 tool routes and all 48 externally served static file hashes matched.
+124 deployment assertions passed, including 45 GET/POST/DELETE API-denial cases,
+21 directory cards, mobile overflow checks and unchanged private deployment IDs.
+All 52 hosted browser cases passed across Chromium desktop/mobile, Firefox and
+WebKit, including accessibility, navigation, generators and downloads. One real,
+opt-in Java status lookup returned provider HTTP 200; ordinary deterministic
+Minecraft tests use provider fixtures. No Clerk authentication loaded publicly.
+Private staging /api/me, /api/admin and /api/pro/presets still return anonymous
+403. Public API guard remains 403/no-store, with no D1/service bindings and
+fail-open disabled. Evidence/screenshots: ignored .wrangler/phase7-public-release.
+
+Restricted Pages 3c60091c-ad13-4ebd-9263-159c46d06890 and API version
+876ed2a4-b1c7-4d36-a6d5-6633cdfc51a1 remain unchanged. No restricted staging,
+D1, Clerk, payment, billing or Supabase change; no vault deployment or main merge.
+Public free tools are released; production authenticated SaaS remains restricted
+by the previously documented CPU/identity/recovery launch gates.
+
 ## Phase 7 — restricted acceptance and public candidate, 3 November 2026
 
 Branch `codex/phase7-release-candidate` continues validated Phase 6 source 39668c9.

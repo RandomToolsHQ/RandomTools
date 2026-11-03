@@ -1,5 +1,15 @@
 # Launch readiness — 3 November 2026
 
+## Approved public free-tools release
+
+The owner approved the exact frozen artifact identified below. It is now live at
+https://randomtools-preview.pages.dev/, deployment
+81de8536-ed2f-4204-941b-ada7fcba1c2a. All 21 tool routes, 48 served asset hashes,
+124 deployment checks and 52 hosted browser cases passed; previous deployment
+d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34 remains available for rollback. No rollback
+was required. No authenticated SaaS, vault, payment, private infrastructure or Git
+main change was included. The production-authentication launch gates below remain.
+
 ## Phase 7 release decision
 
 Restricted acceptance is complete for application source a04a522. The public-only

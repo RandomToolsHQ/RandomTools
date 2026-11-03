@@ -1,5 +1,27 @@
 # Cloudflare staging — current deployment
 
+## Approved public free-tools release — 3 November 2026
+
+https://randomtools-preview.pages.dev/ now serves all 21 free tools from source
+a04a522, using the exact owner-approved frozen 51-file artifact. Manifest SHA256:
+41e903db978d3ab79af68175bc05af8fa99cc4270d52a23b714ea94428ba7bc9.
+Deployment: 81de8536-ed2f-4204-941b-ada7fcba1c2a. Previous public deployment
+d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34 is retained for immediate rollback.
+
+All 52 hosted browser tests and 124 route/asset/security/deployment assertions
+passed. All 21 tool routes work; all 48 served static files match their approved
+hashes. The public API-denial guard rejects GET/POST/DELETE account, auth, admin,
+Pro, subscription and webhook requests with 403/no-store. Public placeholders
+contain no login fields or Clerk development SDK. No D1/service binding exists.
+One opt-in live Java status lookup also returned HTTP 200. Browser checks cover
+desktop/mobile Chromium, Firefox, WebKit, accessibility, navigation and downloads.
+
+Restricted staging remains exactly at the Worker/Pages IDs in the next section;
+anonymous private account/admin/Pro probes remain 403. No D1/Clerk/payment/billing
+change or Git main merge occurred. The vault remains excluded. If a later public
+verification fails, use the retained public Pages deployment's rollback action;
+never restore D1 or change restricted staging to roll back these static tools.
+
 ## Phase 7 — current restricted staging, 3 November 2026
 
 Validated application source `a04a522` is deployed only to
