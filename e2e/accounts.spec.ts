@@ -48,6 +48,58 @@ test("registration, verification, login, protected workspace and logout", async 
     page.getByRole("heading", { name: "Your workspace awaits." }),
   ).toBeVisible();
 });
+
+test("switching account routes discards an unfinished form's busy state and recovery link", async ({
+  page,
+}) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/api/auth/register", async (route) => {
+    await pending;
+    await route.fulfill({
+      json: {
+        message: "Old registration response",
+        developmentLink: "/verify-email?token=synthetic-old-form",
+      },
+    });
+  });
+  try {
+    await page.goto("/register");
+    await page.getByLabel("Display name").fill("Synthetic pending form");
+    await page.getByLabel("Email address").fill("pending@example.test");
+    await page
+      .getByLabel("Password", { exact: true })
+      .fill("synthetic fixture password");
+    const sent = page.waitForRequest((r) =>
+      r.url().endsWith("/api/auth/register"),
+    );
+    await page.getByRole("button", { name: "Create account" }).click();
+    await sent;
+    await expect(
+      page.getByRole("button", { name: "Please wait…" }),
+    ).toBeDisabled();
+    await page.getByRole("link", { name: "Reset password" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Forgot your password?" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Continue", exact: true }),
+    ).toBeEnabled();
+    const response = page.waitForResponse((r) =>
+      r.url().endsWith("/api/auth/register"),
+    );
+    release();
+    await response;
+    await expect(
+      page.getByRole("link", { name: "Open testing link" }),
+    ).toHaveCount(0);
+    await expect(page.getByText("Old registration response")).toHaveCount(0);
+  } finally {
+    release();
+  }
+});
 test("resend verification, reset password, revoke sessions and delete account", async ({
   page,
 }) => {
@@ -64,6 +116,9 @@ test("resend verification, reset password, revoke sessions and delete account", 
     page.getByRole("link", { name: "Open testing link" }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Resend verification" }).click();
+  await expect(
+    page.getByRole("heading", { name: "A new verification link." }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("link", { name: "Open testing link" }).click();
@@ -73,6 +128,9 @@ test("resend verification, reset password, revoke sessions and delete account", 
   await page.getByRole("button", { name: "Verify email" }).click();
   await expect(page.getByRole("status")).toContainText("Email verified");
   await page.getByRole("link", { name: "Reset password" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Forgot your password?" }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page.getByRole("button", { name: "Continue" }).click();
   await page.getByRole("link", { name: "Open testing link" }).click();
@@ -82,6 +140,9 @@ test("resend verification, reset password, revoke sessions and delete account", 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("status")).toContainText("Password changed");
   await page.getByRole("link", { name: "Log in", exact: true }).last().click();
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page
     .getByLabel("Password", { exact: true })

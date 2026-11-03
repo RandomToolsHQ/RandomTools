@@ -843,15 +843,19 @@ footer > div:nth-child(2) {
 }
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+}
+.dashboard-grid > .panel {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .dashboard .panel h2 {
   font-size: 19px;
 }
 .dashboard .panel input,
 .dashboard .panel select {
-  max-width: 100%;
+  max-width: calc(100% - 8px);
   margin: 8px 8px 8px 0;
 }
 .dashboard .panel button {
@@ -1179,7 +1183,7 @@ html[data-theme="light"] .tabs button.active {
   }
   .pricing-grid,
   .dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .text-page h1,
   .tool-page h1 {

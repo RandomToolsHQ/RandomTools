@@ -38,6 +38,8 @@ export default function IpIntelligenceLookup({ request = api }: Props) {
     }
   }
   async function copy() {
+    setNotice("");
+    setError("");
     try {
       if (!navigator.clipboard || !result) throw Error();
       await navigator.clipboard.writeText(exportIpIntelligence(result, "txt"));

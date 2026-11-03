@@ -30,3 +30,9 @@ jobs:
       - run: npm run build:staging
         env:
           VITE_CLERK_PUBLISHABLE_KEY: pk_test_cXVpZXQtY2l2ZXQtODc4Mi5jbGVyay5hY2NvdW50cy5kZXYk
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: synthetic-browser-failure-evidence
+          path: test-results/
+          retention-days: 1

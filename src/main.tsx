@@ -278,7 +278,11 @@ function App() {
                 key={p}
                 path={"/" + p}
                 element={
-                  publicToolsOnly ? <Restricted /> : <Account page={p} />
+                  publicToolsOnly ? (
+                    <Restricted />
+                  ) : (
+                    <Account key={p} page={p} />
+                  )
                 }
               />
             ))}

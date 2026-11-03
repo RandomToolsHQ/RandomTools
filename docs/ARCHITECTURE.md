@@ -28,6 +28,11 @@ architecture. The obsolete react-router-dom wrapper was removed, without path
 or server authorization changes. Node 22.22+ is required. Firebase's isolated
 frontend remains independent of this router.
 
+Each account route mounts a distinct form instance. An unfinished registration
+request cannot leave the recovery screen busy or inject its old testing link.
+This changes frontend state lifetime only; authentication and API permissions
+remain server-enforced.
+
 Hosted accounts now use Clerk's frontend SDK and server-verified short-lived
 session tokens; D1 retains internal users, roles and entitlements. See
 [CLERK.md](CLERK.md) for the additive identity migration and deployment gates.

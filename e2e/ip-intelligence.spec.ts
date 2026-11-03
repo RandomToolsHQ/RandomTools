@@ -73,19 +73,67 @@ test("Pro IP lookup has consent, loading, accessible results and private local e
   await expect(widget.locator("dd").filter({ hasText: /^0$/ })).toBeVisible();
   await expect(widget.getByText("Not flagged by provider")).toBeVisible();
   expect(calls).toBe(1);
+  for (const theme of ["dark", "light"]) {
+    await page.evaluate((value) => {
+      document.documentElement.dataset.theme = value;
+    }, theme);
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include(".ip-intelligence")
+          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+          .analyze()
+      ).violations,
+    ).toEqual([]);
+  }
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          document.documentElement.dataset.syntheticClipboard = text;
+        },
+      },
+    });
+  });
+  await widget.getByRole("button", { name: "Copy IP results" }).click();
+  await expect(widget.getByRole("status")).toContainText("Results copied");
+  await expect(page.locator("html")).toHaveAttribute(
+    "data-synthetic-clipboard",
+    /IP: 1\.1\.1\.1/,
+  );
+  await page.evaluate(() =>
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: undefined,
+    }),
+  );
+  await widget.getByRole("button", { name: "Copy IP results" }).click();
+  await expect(widget.getByRole("alert")).toContainText(
+    "Download the results instead",
+  );
+  await expect(widget.getByRole("status")).toHaveCount(0);
+  const geometry = await page.evaluate(() => ({
+    width: document.documentElement.scrollWidth,
+    viewport: innerWidth,
+    overflowing: Array.from(document.querySelectorAll("body *"))
+      .filter((e) => e.getBoundingClientRect().right > innerWidth + 0.5)
+      .slice(0, 20)
+      .map((e) => ({
+        element: e.tagName,
+        class: e.className,
+        width: e.getBoundingClientRect().width,
+      })),
+  }));
   expect(
-    (
-      await new AxeBuilder({ page })
-        .include(".ip-intelligence")
-        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-        .analyze()
-    ).violations,
-  ).toEqual([]);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth,
-    ),
-  ).toBe(true);
+    geometry.width,
+    JSON.stringify(geometry.overflowing),
+  ).toBeLessThanOrEqual(geometry.viewport);
+  await page.screenshot({
+    path: info.outputPath("ip-intelligence.png"),
+    fullPage: true,
+  });
   for (const format of ["JSON", "TXT"]) {
     const downloading = page.waitForEvent("download");
     await widget.getByRole("button", { name: "Download IP " + format }).click();

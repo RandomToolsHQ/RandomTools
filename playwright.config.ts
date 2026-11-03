@@ -2,7 +2,11 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   testIgnore: "**/public-preview.spec.ts",
-  use: { baseURL: "http://localhost:5180" },
+  use: {
+    baseURL: "http://localhost:5180",
+    screenshot: "only-on-failure",
+    trace: "retain-on-failure",
+  },
   workers: 2,
   webServer: [
     {

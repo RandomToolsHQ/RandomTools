@@ -29,6 +29,16 @@ scans, backup/restore, SEO, all builds and both Worker dry runs passed locally.
 Firebase UI fixes clear stale privileged views and complete local logout while
 warning if server revocation fails. Final source CI is being verified separately.
 
+CI subsequently caught Linux mobile overflow in the account workspace. Grid
+tracks now use minmax(0,1fr), panels can shrink and input margins stay within the
+available width; overflow assertions remain enabled and now include diagnostics.
+A deterministic regression reproduced busy-state leakage across unfinished
+account forms. Account route elements now have distinct keys, and recovery tests
+wait for the destination form before filling it. Added browser coverage for IP
+copy success/failure and dark/light accessibility. No assertion was disabled.
+The expanded application suite contains 84 cases. Final run status is available
+in [branch CI](https://github.com/RandomToolsHQ/RandomTools/actions?query=branch%3Acodex%2Fphase10-release-readiness).
+
 The full account/staging build still emits Vite's existing >500 KiB chunk warning;
 the tools-only build's largest entry is about 438 KiB before gzip. Firebase CLI's
 temporary emulator install emits upstream deprecation/Node 26 engine warnings;
