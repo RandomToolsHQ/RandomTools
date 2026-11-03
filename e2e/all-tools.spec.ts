@@ -52,6 +52,9 @@ test("downloads contain the result and failed files cannot reuse an old download
   ).toBeEnabled();
 });
 test("all text tools produce useful browser results", async ({ page }) => {
+  // Thirteen full navigations plus assertions, including trace recording on
+  // slower browser engines. Individual assertions keep their normal timeout.
+  test.setTimeout(90000);
   for (const [id, input, other, expected] of [
     ["base64", "Hello 🌏", "", "SGVsbG8g8J+Mjw=="],
     ["url", "a b", "", "a%20b"],

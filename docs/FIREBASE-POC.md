@@ -6,6 +6,12 @@ Never apply `experiments/firebase/0006_poc_sessions.sql` to genuine staging.
 
 ## Phase 9.2 security review — release candidate, not deployed
 
+Implementation 5cce6db passed
+[full CI 41689385444](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41689385444),
+including all 84 application, 52 public-artifact, 12 Firebase UI, five emulator,
+175 unit/integration and five offline helper checks. Hosted Firebase positive
+lifecycle/CPU and full IAM cleanup verification remain separate unresolved gates.
+
 Current local evidence: 175 unit/integration tests, 12 POC UI fixture cases,
 five official Auth Emulator lifecycle checks and five offline keyless-helper
 guard tests pass. Guard tests mock every gcloud call and run under python -O;

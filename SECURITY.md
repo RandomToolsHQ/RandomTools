@@ -44,6 +44,13 @@ required before a release.
 
 Report vulnerabilities privately to randomtoolshq@gmail.com. Do not include live credentials or personal data in public issues. Provide a minimal reproduction and affected commit.
 
+The password-cost discussion below describes the retained local legacy adapter.
+The root development API template contains a 30-second CPU setting and must not
+be used for a Workers Free deployment. Restricted Clerk and isolated Firebase
+use separate configurations and managed authentication. Their actual hosted CPU
+must be measured independently; a successful build or dry-run does not establish
+Free-plan compliance. No paid Workers plan has been enabled.
+
 Passwords use `@noble/hashes` PBKDF2-HMAC-SHA256, 600,000 iterations and random 256-bit salts. The library's native Web Crypto adapter runs first; runtimes that reject its work factor with NotSupportedError fall back to the audited JavaScript implementation with the **same** parameters. Tests verify byte-for-byte equivalence. The cost is never reduced to accommodate a runtime limit. Session and one-time tokens are random 256-bit values; only SHA-256 token digests are stored. Cookies are HTTP-only, SameSite=Strict and Secure in production. Password changes revoke all sessions. Email verification/reset tokens expire and are consumed once.
 
 Account mutations require the exact configured Origin and JSON content type. Clerk deletion events have separate signature verification; the Ko-fi endpoint is disabled. API responses are not cached; no-referrer headers prevent token-bearing URLs from appearing in referrers. Request limits count streamed bytes, including bodies without Content-Length. Production launch requires configured email delivery, deployment validation, load tests for password hashing, distributed rate-limit review and independent security review. Local D1 integration tests cover accounts, permissions, payments and retention; these do not prove deployed behaviour. D1 rate limits use atomic counters, but no claim of comprehensive DDoS protection is made. Apply Cloudflare edge limits before launch. Password hashing requires benchmarking on the selected Workers plan; the JS fallback measured around 10–15 seconds under concurrent local Wrangler requests. The Worker has a 30-second CPU ceiling configured, which requires a suitable paid Workers plan; no service has been purchased.

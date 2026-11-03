@@ -1,5 +1,14 @@
 # RandomTools implementation status
 
+Full implementation CI for 5cce6db passed
+[run 41689385444](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41689385444):
+175 unit/integration tests, five offline IAM-helper guards, 84 application
+browser cases, 52 public-artifact cases, 12 Firebase UI cases and five Auth
+Emulator lifecycle checks (333 checks). Typecheck, lint, dependency audit,
+backup/restore, SEO, builds and both Worker dry runs passed. An additional 52
+hosted public-site browser cases passed without changing deployments. These are
+not positive hosted Firebase lifecycle or CPU evidence.
+
 ## Phase 10 release candidate — 4 November 2026
 
 Branch `codex/phase10-release-readiness` continues 5947737 without changing public,
@@ -38,6 +47,15 @@ wait for the destination form before filling it. Added browser coverage for IP
 copy success/failure and dark/light accessibility. No assertion was disabled.
 The expanded application suite contains 84 cases. Final run status is available
 in [branch CI](https://github.com/RandomToolsHQ/RandomTools/actions?query=branch%3Acodex%2Fphase10-release-readiness).
+
+Source 5cce6db passed all 84 application cases on Linux CI, including the former
+overflow failures. A fresh Windows run passed 83; the grouped 13-tool Firefox
+test reached the final correct result but exhausted its 30-second whole-test
+budget under tracing. Its budget is now 90 seconds, matching the existing
+multi-page accessibility budget; per-assertion checks and retries are unchanged.
+The final workflow verifies this adjustment. Another metadata-only hosted check
+confirmed the isolated Firebase D1 ID, existing gateway/rate-limit secret names,
+absence of the genuine D1 binding, and IP lookup disabled. No values were shown.
 
 The full account/staging build still emits Vite's existing >500 KiB chunk warning;
 the tools-only build's largest entry is about 438 KiB before gzip. Firebase CLI's

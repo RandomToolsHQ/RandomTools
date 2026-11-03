@@ -157,7 +157,7 @@ Deployment: `d1c4fd47-296d-4b2f-b6a5-28ed82c7ba34`; immutable preview:
 https://d1c4fd47.randomtools-preview.pages.dev/. All 40 hosted public browser
 checks passed after this update. PROGRESS.md records the artifact hash and evidence.
 
-Safe to test: all 18 browser tools, directory/search, local favourites, downloads,
+Safe to test: all 21 free tools, directory/search, local favourites, downloads,
 image compression, hashing, dark/light themes, mobile layouts and informational
 pages. Tool inputs remain in the browser. No public accounts, server saves,
 admin console, Pro workspace, analytics collection or live payments are available.
