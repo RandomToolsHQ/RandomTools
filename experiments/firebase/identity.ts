@@ -97,7 +97,8 @@ export function configuration(env: FirebaseEnv) {
     env.ENVIRONMENT !== "firebase-poc" ||
     !/^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(env.FIREBASE_PROJECT_ID || "") ||
     !env.FIREBASE_WEB_API_KEY ||
-    env.RATE_LIMIT_SECRET?.length < 32
+    typeof env.RATE_LIMIT_SECRET !== "string" ||
+    env.RATE_LIMIT_SECRET.length < 32
   )
     throw new FirebaseError(
       503,

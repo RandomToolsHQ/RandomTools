@@ -295,6 +295,14 @@ it("rejects unsupported environment, non-allowlisted UID, wrong gateway email an
     ).status,
   ).toBe(400);
 });
+it("fails closed before provider calls when the rate-limit secret is absent or malformed", async () => {
+  const token = await jwt();
+  for (const secret of [undefined, null, 12345, "", "short"]) {
+    env.RATE_LIMIT_SECRET = secret;
+    expect((await call("/session", token, {})).status).toBe(503);
+  }
+  expect(lookupCount).toBe(0);
+});
 it("never links a matching legacy/Clerk email or accepts Firebase custom claims as Admin/Pro", async () => {
   await db
     .prepare(
