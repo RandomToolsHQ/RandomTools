@@ -16,13 +16,22 @@ fresh provider lookup/revocation check on every request, and requires a revocabl
 D1-backed application cookie. Existing fresh Pro/admin authorization is reused.
 
 119 local unit/integration tests pass, including actual RSA signatures and D1
-ownership/session/audit rollback tests. Six POC desktop/mobile browser cases and
+ownership/session/audit rollback tests. Eight POC desktop/mobile browser cases and
 five official local Auth Emulator lifecycle checks pass; those are explicitly
 not hosted provider-flow evidence. Hosted testing passed 28 checks: actual
 synthetic password sign-in, anonymous gateway denial, unverified-email denial,
 signature-tampering denial, protected frontend rendering and mobile/desktop
 accessibility. A Pages immutable-response-header failure found during smoke
-testing was corrected and covered by a regression test.
+testing was corrected and covered by a regression test. The Firebase popup
+resolver is configured explicitly; provider initialization failure is tested,
+while successful Google enrollment remains unproven. Initial Windows Firefox
+timeouts in existing app/public suites passed on serial targeted reruns.
+Source 92c9bb3 passed full GitHub CI 41610414829: 119 unit/integration,
+eight Firebase UI, five Auth Emulator lifecycle, 68 existing app browser and
+52 public-artifact browser tests; lint/typecheck, restore rehearsal, SEO,
+builds and Worker dry runs all passed. Root npm audit and branch secret scans
+have zero findings. Only this isolated POC was deployed; no existing public or
+Clerk staging deployment was changed.
 
 No Firebase Admin private key was generated. The owner requested a keyless
 approach. Ordinary Worker requests already need no privileged credential.

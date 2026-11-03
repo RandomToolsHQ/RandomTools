@@ -166,10 +166,26 @@ and desktop/mobile overflow and accessibility checks. A Pages immutable-header
 exception found in the first run was fixed by cloning the binding response and
 covered by a regression test before repeating the hosted smoke tests.
 
-Local evidence: 119 unit/integration tests, six POC browser cases and five
+Local evidence: 119 unit/integration tests, eight POC browser cases and five
 official Auth Emulator lifecycle checks passed, alongside lint, typecheck,
 dependency audit and a redacted staged secret scan. Emulator and UI API fixtures
 are not evidence of hosted verification, recovery, revocation or deletion.
+The popup resolver is configured explicitly; provider initialization failures
+are tested without a genuine Google identity. Three Windows Firefox timeouts in
+the existing app/public suites passed on serial targeted reruns.
+
+Source `92c9bb3` passed [full GitHub CI 41610414829](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41610414829):
+119 unit/integration tests, eight Firebase UI cases, five Auth Emulator lifecycle
+checks, 68 existing app browser cases and 52 public-artifact browser cases.
+Lint, typecheck, backup/restore rehearsal, SEO, builds and both Worker dry runs
+also passed. Root npm audit and the branch commit secret scan had zero findings.
+
+Latest isolated Pages deployment: `55c23b3b-75fa-404a-89b5-c3d3775c2026`.
+Isolated API version: `e9d241c3-cce9-4563-acfe-d8685112c936` (100%).
+Read-only checks confirmed the original public/Clerk Pages and Clerk API
+deployment IDs still match their pre-POC baseline. The new POC D1 has zero
+application users, grants and sessions; unverified Firebase identities cannot
+bootstrap them. No genuine database query or migration was needed for this POC.
 
 No representative authenticated CPU result is available: the workload harness
 refuses to treat denied unverified requests as successful authentication. The
