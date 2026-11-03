@@ -1,5 +1,26 @@
 # RandomTools implementation status
 
+## Phase 9.1 — keyless hosted validation in progress, 3 November 2026
+
+Rechecked branch/CI and Cloudflare deployment IDs: public, Clerk Pages/API and
+isolated Firebase Pages/API are unchanged. Firebase remains Spark ($0); Google
+Cloud explicitly reports no billing account. The existing Firebase service
+account shows No keys. The old private-key dialog was cancelled. Owner approved
+Google Cloud terms (marketing off) and the exact temporary custom-role setup
+documented in docs/FIREBASE-POC.md. No IAM grants, API activation or token issuance
+has occurred: Cloud Shell requires Google device/phone verification, which is
+left to the owner and must not incur SMS/payment charges or be bypassed.
+
+Prepared narrower-than-Auth-Admin role JSON: four Firebase user permissions and
+only getAccessToken on a dedicated test service account, both time-bounded to
+two hours. Admin token input is capped at 15 minutes and verification links must
+match the exact isolated Firebase domain. Added a bounded, paced hosted read
+workload runner and three measurement-policy regression tests. Denied,
+wrong-owner, mixed or incomplete intervals cannot produce authenticated CPU
+quantiles. Hosted preflight correctly refused the still-unverified test member;
+no benchmark samples or representative CPU measurements were generated.
+
+
 ## Phase 9 — isolated Firebase Spark proof of concept, 3 November 2026
 
 Branch `codex/firebase-free-poc` continues verified Phase 8 commit 2a4f38e.

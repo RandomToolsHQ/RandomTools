@@ -22,10 +22,10 @@ if (
   typeof auth.accessToken !== "string" ||
   !Number.isFinite(auth.expiresAt) ||
   auth.expiresAt <= Date.now() + 60000 ||
-  auth.expiresAt > Date.now() + 3600000
+  auth.expiresAt > Date.now() + 900000
 )
   throw Error(
-    "Provide a scoped short-lived access token; private/refresh keys are refused",
+    "Provide a scoped access token valid for at most 15 minutes; private/refresh keys are refused",
   );
 const fixtures = JSON.parse(await readFile(root + "/fixtures.json", "utf8")),
   web = JSON.parse(await readFile(root + "/firebase-web-config.json", "utf8"));
@@ -89,7 +89,7 @@ for (const f of fixtures.fixtures) {
   });
   const url = new URL(link.oobLink);
   if (
-    !url.hostname.endsWith(".firebaseapp.com") ||
+    url.origin !== `https://${project}.firebaseapp.com` ||
     url.searchParams.get("mode") !== "verifyEmail"
   )
     throw Error("Unexpected verification action");

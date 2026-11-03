@@ -1,0 +1,6 @@
+{
+  "title": "RandomTools POC access token minter",
+  "description": "Bind only to the dedicated POC test service account with a short expiration. No JWT/blob signing or delegation chain.",
+  "stage": "GA",
+  "includedPermissions": ["iam.serviceAccounts.getAccessToken"]
+}

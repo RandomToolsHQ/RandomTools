@@ -1,0 +1,11 @@
+{
+  "title": "RandomTools POC synthetic Auth tests",
+  "description": "Isolated project only. No Auth configuration, signing, password hashes, billing or IAM administration.",
+  "stage": "GA",
+  "includedPermissions": [
+    "firebaseauth.users.get",
+    "firebaseauth.users.sendEmail",
+    "firebaseauth.users.update",
+    "firebaseauth.users.delete"
+  ]
+}

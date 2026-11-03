@@ -48,6 +48,65 @@ is still required; no paid Cloud Functions deletion webhook has been introduced.
 
 ## Credential decision — no private key generated
 
+### Phase 9.1 approved scope (not applied)
+
+Read-only rechecks found the same Cloudflare deployment IDs and D1 isolation.
+Firebase still displays Spark, $0/month. Google Cloud's linked-account screen
+explicitly says this project has no billing account. After owner-approved Google
+Cloud terms acceptance (marketing off), the console shows the existing Firebase
+SDK service account has **No keys**. Its broad service-agent role will not be
+used for test impersonation. IAM Credentials API is not yet enabled. Cloud Shell
+stated it is free. The owner subsequently approved the exact two-hour custom-role
+setup below, but no IAM grants or tokens have been issued. Standalone Cloud Shell
+now requires Google's "Verify your info to continue" device/phone check. The
+owner must complete zero-cost verification; no codes, CAPTCHA, SMS charges or
+security protections may be handled or bypassed by the agent. Account verification
+remains pending, so the hosted privileged test path cannot yet run.
+
+Proposed exact project: `randomtools-firebase-poc` (number `520548171148`).
+Create `randomtools-poc-auth-tests@randomtools-firebase-poc.iam.gserviceaccount.com`.
+Use two custom roles, defined as reviewable JSON under experiments/firebase/iam:
+
+- Project role `randomtoolsPocAuthTests`: only firebaseauth.users.get,
+  firebaseauth.users.sendEmail, firebaseauth.users.update and
+  firebaseauth.users.delete. Bind to the new service account in this project,
+  with a two-hour expiry. This is narrower than roles/firebaseauth.admin: it
+  excludes Auth configuration, password-hash configuration, key creation and
+  application/IAM/billing permissions.
+- Role `randomtoolsPocAccessTokenMinter`: only
+  iam.serviceAccounts.getAccessToken. Bind only on that new service account to
+  user:randomtoolshq@gmail.com, with the same two-hour expiry. No signJwt,
+  signBlob, getOpenIdToken, actAs or delegated impersonation permission.
+
+These Firebase permissions apply to **all Auth users in this isolated project**;
+IAM does not enforce the synthetic UID allowlist. The operator harness must
+validate the exact fixture UID/email before each administrative mutation.
+Cloud Shell's initial source authorization can exercise the operator's existing
+Google Cloud permissions, potentially beyond this project; selecting a project
+is not a security boundary. Use it only for reviewed setup/cleanup commands in
+this project. Do not export or save that source credential locally.
+
+After approval, enable only IAM/IAM Credentials APIs if needed and if no billing
+is required, then use generateAccessToken REST with lifetime=900s. Store only
+the resulting short-lived token in the ignored owner-restricted POC directory;
+never export a service-account key or persist ADC/refresh credentials. Scope
+cloud-platform enables API use but does not expand the custom IAM permissions.
+
+Cleanup: remove operator impersonation binding and project Auth binding,
+disable the temporary service account, verify stale-token calls are denied,
+remove the dedicated service account/custom roles, delete local token files,
+and terminate/revoke Cloud Shell's privileged session. Removing a minting grant
+alone does not invalidate an already issued token; allow expiry and verify
+denial, or disable the account. Tokens expire after 15 minutes without refresh.
+Only recorded synthetic Firebase/D1 fixture IDs may be removed.
+
+[IAM pricing](https://cloud.google.com/iam/pricing) states IAM API usage is free;
+[Cloud Shell pricing](https://cloud.google.com/shell/pricing) states Cloud Shell
+is free. The direct impersonation documentation requires API activation but
+does not list a billing account. Actual activation remains untested: stop if
+Google requests billing, a trial, a payment method or a Blaze upgrade. Do not
+treat an unpressed Enable button as successful no-billing activation.
+
 The owner explicitly declined a long-lived Firebase Admin SDK key and requested
 keyless alternatives. The normal Worker needs only Firebase web configuration,
 not a privileged service-account key. Administrative credentials are needed only
@@ -56,11 +115,12 @@ without using a real mailbox, revoking synthetic provider sessions, and reviewin
 or reconciling deletion. Never change email_verified claims locally or skip
 verification to get around that test dependency.
 
-Preferred next approach: a **15-minute impersonated access token** for a dedicated
-`randomtools-poc-auth-tests` service account with only roles/firebaseauth.admin on
-this isolated project. A trusted operator needs a temporary, scoped Token Creator
-binding on that account and IAM Credentials API availability. Remove the binding
-after testing. Use Cloud Shell's temporary authorization or an explicitly
+The initial Phase 9 proposal used roles/firebaseauth.admin and Token Creator.
+Phase 9.1 replaces both with the narrower custom roles above. Use a **15-minute
+impersonated access token** for the dedicated `randomtools-poc-auth-tests` service
+account. A trusted operator needs the temporary getAccessToken binding on that
+account and IAM Credentials API availability. Remove the binding after testing.
+Use Cloud Shell's temporary authorization or an explicitly
 authorized local gcloud session as the source credential. Do not export a private
 key, copy existing Clerk secrets or grant authority over another project.
 
@@ -77,9 +137,10 @@ No local gcloud/ADC configuration was available during inspection. Plain gcloud
 end-user ADC is also not a drop-in solution: Firebase documents an OAuth-client
 restriction and requires a custom Desktop client for that route. See
 [Admin SDK local ADC requirements](https://firebase.google.com/docs/admin/setup#test-with-gcloud-end-user-credentials).
-Browser control became unavailable while preparing the administrative path;
-Cloud Shell authorization/impersonation has not been completed. This is a
-remaining control-plane dependency, not evidence that a private key is necessary.
+Browser control was unavailable during Phase 9; Phase 9.1 restored it and reached
+Google's required device verification. Cloud Shell authorization/impersonation
+has not been completed. This remains a control-plane dependency, not evidence
+that a private key is necessary.
 
 `scripts/firebase-poc-admin.mjs` accepts only a short-lived OAuth token descriptor
 under ignored `.wrangler/phase9/admin-access.json`:
@@ -88,7 +149,7 @@ under ignored `.wrangler/phase9/admin-access.json`:
 {"projectId":"randomtools-firebase-poc","accessToken":"OPERATOR_SUPPLIED_SHORT_LIVED_TOKEN","expiresAt":0}
 ```
 
-Set expiresAt to its real expiration in epoch milliseconds, within one hour.
+Set expiresAt to its real expiration in epoch milliseconds, within 15 minutes.
 Private-key and refresh-token files are refused. Never paste tokens into chat,
 commit them or pass them as command-line arguments. The harness verifies exact
 synthetic ownership before actions and never uses the genuine Founder account.
@@ -196,6 +257,23 @@ also remain unproven. Keep Clerk in place; Firebase is a promising no-domain
 candidate, not yet a validated replacement or a Free-CPU compliance claim.
 
 ## Reproduction commands
+
+The Phase 9.1 bounded workload runner is `node scripts/firebase-poc-workload.mjs`.
+It requires a real verified server session, an entitled synthetic member and at
+least three owned presets before starting. It runs three sequential batches of
+40 reads, paced at 1.5 seconds plus response time; it stops on the first error
+and attempts server logout in a finally block. It records end-to-end latency
+p50/p95/p99, failure rate, provider throttling and visible CPU-limit errors.
+It creates no roles, grants, accounts or presets and cannot substitute for their
+hosted validation. A hosted preflight against the currently unverified member
+correctly refused to start; no performance samples were generated.
+
+Only then run `node scripts/firebase-poc-cpu.mjs` for separate sampled Cloudflare
+CPU quantiles. Mixed, denied, wrong-owner, redirected or incomplete intervals
+have their CPU quantiles withheld. Three measurement-policy regression tests
+cover those cases and distinguish end-to-end latency from Worker CPU. Keep
+negative security tests outside the measurement intervals. Empty or unavailable
+analytics and warm-only samples cannot establish Free-plan reliability.
 
 ```powershell
 npm ci
