@@ -18,10 +18,12 @@
     "functions",
     "staging/guard.ts",
     "tests",
+    "experiments/firebase",
     "vite.config.ts",
     "playwright.config.ts",
     "playwright.public.config.ts",
     "playwright.private.config.ts",
+    "playwright.firebase.config.ts",
     "private-e2e"
   ]
 }

@@ -1,5 +1,44 @@
 # RandomTools implementation status
 
+## Phase 9 — isolated Firebase Spark proof of concept, 3 November 2026
+
+Branch `codex/firebase-free-poc` continues verified Phase 8 commit 2a4f38e.
+It adds a separate Firebase frontend/API and synthetic-only D1; the public
+21-tool site, Clerk staging, genuine Founder account, billing and payments remain
+unchanged. No migration, public signup activation or merge to main is authorized.
+
+Firebase project `randomtools-firebase-poc` is Spark ($0), with email/password
+and Google enabled and the separate pages.dev hostname accepted. The POC is at
+https://randomtools-firebase-poc.pages.dev/ behind a distinct named-key gateway,
+exact synthetic UID allowlist and isolated-database marker. Worker and preview
+URLs are disabled. The Worker verifies real RS256 Firebase tokens, performs a
+fresh provider lookup/revocation check on every request, and requires a revocable
+D1-backed application cookie. Existing fresh Pro/admin authorization is reused.
+
+119 local unit/integration tests pass, including actual RSA signatures and D1
+ownership/session/audit rollback tests. Six POC desktop/mobile browser cases and
+five official local Auth Emulator lifecycle checks pass; those are explicitly
+not hosted provider-flow evidence. Hosted testing passed 28 checks: actual
+synthetic password sign-in, anonymous gateway denial, unverified-email denial,
+signature-tampering denial, protected frontend rendering and mobile/desktop
+accessibility. A Pages immutable-response-header failure found during smoke
+testing was corrected and covered by a regression test.
+
+No Firebase Admin private key was generated. The owner requested a keyless
+approach. Ordinary Worker requests already need no privileged credential.
+Privileged verification/reset-link and provider-revocation tests await approved
+short-lived administrative authorization; local gcloud/ADC is absent and browser
+control became unavailable. Prefer a dedicated Auth-only service account with
+temporary impersonation over a persistent key, verifying no billing requirement
+first. The local admin harness refuses private/refresh-key files.
+
+Verified hosted workspace/Pro/admin/deletion/revocation workloads, actual mailbox
+recovery, Google enrollment and representative CPU measurements remain blocked.
+Unverified-token denials are not presented as successful authenticated workload
+or Free-plan compliance. See docs/FIREBASE-POC.md for credential alternatives,
+quotas, implementation boundaries and the migration design (not executed).
+
+
 ## Phase 8 — restricted account release candidate, 3 November 2026
 
 Branch `codex/phase8-account-readiness` continues the Founder bootstrap and

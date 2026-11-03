@@ -13,11 +13,15 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run build:firebase-poc
+      - run: npx wrangler deploy --config experiments/firebase/wrangler.toml --dry-run
       - run: npm run check:backup
       - run: npm run build:pages
       - run: node scripts/check-seo.mjs
       - run: npx wrangler deploy --config wrangler.api.toml --dry-run
       - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:firebase-ui
+      - run: npm exec --yes --package firebase-tools@15.34.2 -- node scripts/firebase-poc-emulator.mjs
       - run: npm run test:e2e
       - run: npm run build:public-staging
       - run: npm run test:public

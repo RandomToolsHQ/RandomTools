@@ -1,0 +1,13 @@
+# Only the isolated POC Pages project. Keep every route behind its own gateway.
+name = "randomtools-firebase-poc"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-10-01"
+[vars]
+STAGING_GATE_ORIGIN = "https://randomtools-firebase-poc.pages.dev"
+[[d1_databases]]
+binding = "GATE_DB"
+database_name = "randomtools-firebase-poc"
+database_id = "00000000-0000-0000-0000-000000000000"
+[[services]]
+binding = "API"
+service = "randomtools-firebase-poc-api"

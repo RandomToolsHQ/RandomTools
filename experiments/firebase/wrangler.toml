@@ -1,0 +1,15 @@
+# Separate experiment. Never substitute the genuine staging D1 ID.
+name = "randomtools-firebase-poc-api"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+workers_dev = false
+preview_urls = false
+[vars]
+ENVIRONMENT = "firebase-poc"
+APP_ORIGIN = "https://randomtools-firebase-poc.pages.dev"
+STAGING_GATE_ORIGIN = "https://randomtools-firebase-poc.pages.dev"
+FIREBASE_PROJECT_ID = "randomtools-firebase-poc"
+[[d1_databases]]
+binding = "DB"
+database_name = "randomtools-firebase-poc"
+database_id = "00000000-0000-0000-0000-000000000000"

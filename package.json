@@ -18,7 +18,10 @@
     "build:staging": "node scripts/staging.mjs",
     "build:public-staging": "node scripts/public-staging.mjs",
     "preview:pages": "wrangler pages dev dist --port 8790",
-    "check:backup": "node scripts/check-backup.mjs"
+    "check:backup": "node scripts/check-backup.mjs",
+    "build:firebase-poc": "node scripts/firebase-poc-build.mjs",
+    "dev:firebase-poc": "vite --config experiments/firebase/vite.config.ts --mode firebase-poc",
+    "test:firebase-ui": "playwright test --config playwright.firebase.config.ts"
   },
   "dependencies": {
     "@clerk/backend": "^3.26.5",
@@ -28,6 +31,7 @@
     "diff": "latest",
     "entities": "^8.1.0",
     "fflate": "^0.8.3",
+    "firebase": "^13.2.0",
     "jose": "^6.2.14",
     "lucide-react": "latest",
     "motion": "latest",
@@ -63,6 +67,7 @@
     "wrangler": "latest"
   },
   "overrides": {
-    "minimatch": "11.0.1"
+    "minimatch": "11.0.1",
+    "@grpc/grpc-js": "1.14.7"
   }
 }
