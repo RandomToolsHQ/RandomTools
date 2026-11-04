@@ -52,7 +52,7 @@ References: [Spark](https://firebase.google.com/pricing),
 [project quotas](https://firebase.google.com/docs/projects/learn-more),
 [Auth quotas](https://firebase.google.com/docs/auth/limits).
 
-### Separate reference approval profile — not deployed
+### Approved reference profile — deployed with secrets unset
 
 Cloudflare account: `5c172e2e4c51cfc7dc512c96825b2912`.
 
@@ -62,9 +62,8 @@ Cloudflare account: `5c172e2e4c51cfc7dc512c96825b2912`.
 | Worker randomtools-phase11-baseline-api | Current Firebase API verification/session/D1/Pro/admin code; workers.dev and preview URLs off. New D1 binding only. |
 | Pages randomtools-phase11-baseline | randomtools-phase11-baseline.pages.dev; service binding only to the new Worker and GATE_DB only to the new D1. Test branch phase111-test, no Git connector. All assets/routes gated. |
 
-Inventory shows two existing D1 databases (Free limit ten) and only the original
-three Pages projects. Proposed names do not collide in this account; global
-availability is rechecked when creation is approved. No automatic alternative name.
+Pre-creation inventory showed two existing D1 databases (Free limit ten) and the
+original three Pages projects. The approved names were available and created.
 Preserve genuine D1 24d38e43-b765-4d21-b713-fce893d7317d and Firebase POC D1
 caf619cb-a7c4-46fe-b5ac-c8245827d16a. Before any remote migration, verify returned
 new database ID/name/account and empty app schema; never substitute either old ID.
@@ -110,8 +109,8 @@ credential stays server-side. No secret was created or configured in this phase.
 
 ### Keyless lifecycle authorization proposal — not granted
 
-Only after project creation reveals its project number, request fresh scoped
-approval for randomtools-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com.
+Fresh scoped approval was requested for project 771458729298 and
+randomtools-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com.
 Proposed Auth permissions: firebaseauth.users.get, users.sendEmail, users.update,
 users.delete. Operator randomtoolshq@gmail.com gets only iam.serviceAccounts.getAccessToken
 on this service account, with conditional two-hour grants and 15-minute impersonated
@@ -445,8 +444,9 @@ manual approvals, cleanup, signed deletion webhook replay protection and audit
 retention. Rehearse exports/restores; no genuine data is copied by this POC.
 
 Supabase setup approval was received and applied as recorded above. Separate Spark
-creation remains pending. That approval does not authorize a new Google IAM grant,
-permanent key, production migration or new Cloudflare reference clone. Hosted
+and Cloudflare reference creation were subsequently approved and completed.
+Those approvals do not authorize a new Google IAM grant,
+permanent key, production migration or secret activation. Hosted
 verification needs fresh, separately approved short-lived keyless privileges in
 the new project; earlier grants were removed. Resource deletion requires approval.
 After tests remove recorded synthetic users/grants/data, tokens and temporary
