@@ -48,6 +48,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@cloudflare/workers-types": "latest",
+    "@electric-sql/pglite": "0.5.15",
     "@eslint/js": "latest",
     "@playwright/test": "latest",
     "@tailwindcss/vite": "latest",

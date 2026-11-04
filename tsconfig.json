@@ -19,6 +19,7 @@
     "staging/guard.ts",
     "tests",
     "experiments/firebase",
+    "experiments/supabase",
     "vite.config.ts",
     "playwright.config.ts",
     "playwright.public.config.ts",

@@ -1,5 +1,42 @@
 # RandomTools implementation status
 
+## Phase 11 — isolated Supabase preparation, 4 November 2026
+
+Branch `codex/phase11-supabase-poc` continues bfd3811. The earlier Clerk-based
+Supabase branch was reviewed without merging it. Connected read-only inspection
+found the existing Free Sydney project `ijlohzzqszyhncglqsfq`, healthy, with no
+recorded migrations. Public, Clerk and Firebase deployment IDs and existing
+Firebase D1 synthetic counts were verified unchanged. No remote schema, resource,
+secret, IAM, payment or genuine-account mutation was performed.
+
+Implemented a minimal Firebase/Edge/Postgres API with isolated `rt11` schema,
+transactional fresh permissions/session checks, manual Pro grants/revocation,
+profile/preset operations, export and fail-closed deletion with durable partial
+failure evidence. Reuses the existing RSA/live-provider verifier unchanged;
+configuration requires a separate new Spark project, never existing Firebase POC.
+RLS and direct-table revocations protect tables; only three reviewed RPCs are
+granted to the server runtime. The service credential remains intrinsically
+privileged and requires explicit hosted approval; it is never in browser code.
+
+Added real Postgres/WASM isolation, concurrency/quota, audit rollback, deletion,
+session and grant tests; actual RSA/provider-state tests; and benchmark guards.
+First targeted suites passed 44 tests. Full regression/CI is verified separately.
+Build bundles only to ignored `.wrangler/phase11`; emitted JavaScript passes Deno
+checking and a fail-closed entry smoke host. No deployment occurs from CI.
+
+Prepared bounded matched workload tooling, with strict expected owner/fixture
+checks, failed-auth exclusion, alternating backend order, exact fixture cleanup
+and CPU/wall-time separation. Hosted runs remain blocked on explicit prepared
+Supabase setup and separate Spark project approvals; new IAM and reference-clone
+permissions require separate approval. No new hosted performance claim is made.
+Cookie-based browser validation also needs a new restricted same-origin proxy.
+
+Read the [Phase 11 evidence, limits, architecture and capacity estimates](docs/PHASE11-SUPABASE.md).
+Decision: **MORE TESTING REQUIRED**, no migration/public signup. At the documented
+500,000 monthly function quota, a 20-call/day plus 10% overhead model fits 100
+daily users but exceeds quota at 1,000; 5,000 also exceeds estimated egress/storage.
+These are estimates, not hosted capacity results. All spending remains $0.
+
 ## Hosted Firebase validation completed — 4 November 2026
 
 This section supersedes the historical blocked/deployment statements below.

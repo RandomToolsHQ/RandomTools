@@ -1,5 +1,11 @@
 # Launch readiness — 3 November 2026
 
+Phase 11 local [Supabase/Firebase evaluation](PHASE11-SUPABASE.md) is **MORE TESTING
+REQUIRED**. It does not approve migration, public registration or new production
+infrastructure. Larger documented CPU limits are not measured performance. Hosted
+Supabase, separate Spark identities, matched reference clone, browser cookie
+boundary, cold starts, recovery/backup and cleanup verification remain gates.
+
 ## Hosted decision — 4 November 2026
 
 Official hosted verification/recovery, password changes, disabled/revoked/deleted

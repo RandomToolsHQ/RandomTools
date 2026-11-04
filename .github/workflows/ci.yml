@@ -16,6 +16,9 @@ jobs:
       - run: npm test
       - run: python3 -O scripts/firebase-poc-keyless-test.py
       - run: python3 -O scripts/firebase-poc-remote-test.py
+      - run: node scripts/supabase-phase11-build.mjs
+      - run: npx --yes deno@2.9.6 check .wrangler/phase11/supabase/functions/randomtools-phase11/index.js
+      - run: node scripts/supabase-phase11-smoke.mjs
       - run: npm run build:firebase-poc
       - run: npx wrangler deploy --config experiments/firebase/wrangler.toml --dry-run
       - run: npm run check:backup

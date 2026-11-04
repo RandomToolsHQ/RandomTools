@@ -1,5 +1,10 @@
 # Phase 9 — isolated Firebase Spark proof of concept
 
+Phase 11 is a separate [Supabase experiment](PHASE11-SUPABASE.md). It imports this
+verifier without changing it, requires a different synthetic Firebase project,
+and does not alter this POC's deployments, allowlist, users, D1 or secrets. Earlier
+IAM approval has expired and its resources were removed; no reuse is authorized.
+
 ## Current hosted result — 4 November 2026
 
 The hosted lifecycle gates described as blocked in historical sections below were
