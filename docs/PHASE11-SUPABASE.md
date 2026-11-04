@@ -132,10 +132,12 @@ transaction rollback. It does not establish hosted PostgREST roles/pool concurre
 networking, regional routing, CPU, shared capacity or true cold starts. Its concurrent
 calls exercise queued transactions, not multiple independent hosted connections.
 JWT tests use actual RSA signatures with synthetic keys/provider responses.
-The final targeted suites passed 45 tests; an earlier full local run passed 221
+The final targeted suites passed 46 tests; an earlier full local run passed 221
 tests before the final credential-error redaction guard was added. Final CI runs
 the expanded regression suite. A subprocess regression confirms malformed local
 credential JSON never appears in benchmark errors. No real credentials were used.
+An additional regression verifies admins can revoke a disabled member's grant,
+cannot grant them new Pro, and re-enabling the account does not restore revoked Pro.
 The bundled JavaScript artifact is checked by Deno; strict source types are checked
 by TypeScript. The emitted-entry smoke host supplies an empty Deno environment and
 verifies fail-closed responses without network/cloud access. CI never deploys it.

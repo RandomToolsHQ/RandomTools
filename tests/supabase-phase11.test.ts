@@ -124,6 +124,17 @@ it("expired grant cannot authorize", async () => {
     code: "RT403",
   });
 });
+it("admins can revoke a disabled member without restoring access", async () => {
+  await q("admin", "grant", { userId: "member", duration: "permanent" });
+  await db.exec("UPDATE rt11.users SET disabled=true WHERE id='member'");
+  await expect(
+    q("admin", "grant", { userId: "member", duration: "7d" }),
+  ).rejects.toMatchObject({ code: "RT403" });
+  await q("admin", "revoke", { userId: "member" });
+  await expect(q("member", "me")).rejects.toMatchObject({ code: "RT401" });
+  await db.exec("UPDATE rt11.users SET disabled=false WHERE id='member'");
+  expect((await q("member", "me")).pro).toBe(false);
+});
 it("self promotion and owner/role injection are rejected", async () => {
   await expect(
     q("member", "grant", { userId: "member", duration: "permanent" }),

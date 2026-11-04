@@ -95,9 +95,10 @@ BEGIN
   IF u.role<>'admin' THEN RAISE EXCEPTION 'Denied' USING ERRCODE='RT403'; END IF;
   IF p_body-ARRAY['userId','duration']<>'{}' OR jsonb_typeof(p_body->'userId') IS DISTINCT FROM 'string' THEN
    RAISE EXCEPTION 'Invalid' USING ERRCODE='RT400'; END IF;
-  SELECT * INTO target_user FROM rt11.users WHERE id=p_body->>'userId' AND NOT deleted AND NOT disabled FOR UPDATE;
+  SELECT * INTO target_user FROM rt11.users WHERE id=p_body->>'userId' AND NOT deleted FOR UPDATE;
   IF target_user.id IS NULL THEN RAISE EXCEPTION 'Missing' USING ERRCODE='RT404'; END IF;
   IF p_operation='grant' THEN
+   IF target_user.disabled THEN RAISE EXCEPTION 'Disabled' USING ERRCODE='RT403'; END IF;
    IF p_body->>'duration' NOT IN ('7d','30d','permanent') OR p_body->>'duration' IS NULL THEN RAISE EXCEPTION 'Invalid' USING ERRCODE='RT400'; END IF;
    -- Cap retained grant rows; superseded grants are represented in the audit log.
    DELETE FROM rt11.grants WHERE user_id=target_user.id;
