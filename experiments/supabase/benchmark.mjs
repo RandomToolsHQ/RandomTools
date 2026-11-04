@@ -105,9 +105,21 @@ export async function runSample(adapter, { run, kind, runId, sleep = pause }) {
     end,
     attempts,
     ...summary,
-    maxLatencyMs: attempts.length
+    maxLatencyMs: attempts.some((a) => a.authorized)
+      ? Math.max(
+          ...attempts.filter((a) => a.authorized).map((a) => a.latencyMs),
+        )
+      : null,
+    maxAttemptLatencyMs: attempts.length
       ? Math.max(...attempts.map((a) => a.latencyMs))
       : null,
+    authenticationOrAuthorizationFailures: attempts.filter((a) =>
+      [401, 403].includes(a.status),
+    ).length,
+    applicationRateLimitResponses: attempts.filter((a) => a.status === 429)
+      .length,
+    unclassifiedDependencyFailures: attempts.filter((a) => a.status >= 500)
+      .length,
     cpuMs: null,
     cpuEvidence: "Requires platform traces; handler wall time is not CPU",
     providerThrottles: null,

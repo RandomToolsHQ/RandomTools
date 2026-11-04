@@ -20,5 +20,6 @@ const c: Config = {
   rateSecret: env("POC_RATE_SECRET"),
   testers,
   serviceKey: env("SUPABASE_SERVICE_ROLE_KEY"),
+  testExpiresAt: Number(env("POC_TEST_EXPIRES_AT")),
 };
 Deno.serve(createHandler(c, makeStore(c)));

@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { decodeJwt } from "jose";
+import { createHash } from "node:crypto";
 import { runSample, pause } from "../experiments/supabase/benchmark.mjs";
 /* global fetch, AbortSignal */
 const root = ".wrangler/phase11";
@@ -17,6 +18,17 @@ if (
   !input.expectedUserId
 )
   throw Error("Exact synthetic fixture required");
+const hash = (value) => createHash("sha256").update(value).digest("hex");
+if (
+  input.syntheticEmail !== input.runId + "-member@example.com" ||
+  input.expectedUserId !==
+    "firebase_" +
+      hash(
+        "https://securetoken.google.com/randomtools-supabase-auth-poc\n" +
+          input.subject,
+      )
+)
+  throw Error("Recorded synthetic identity mapping required");
 const target = {
   supabase:
     "https://ijlohzzqszyhncglqsfq.supabase.co/functions/v1/randomtools-phase11",
@@ -46,7 +58,11 @@ for (const kind of ["cloudflare", "supabase"]) {
     );
   if (
     kind === "supabase" &&
-    (!/^[a-f0-9]{64}$/.test(c.key) || c.origin !== "http://127.0.0.1:54381")
+    (!/^[a-f0-9]{64}$/.test(c.key) ||
+      ![
+        "http://127.0.0.1:54381",
+        "https://randomtools-phase11-supabase.pages.dev",
+      ].includes(c.origin))
   )
     throw Error("Prepared loopback harness required");
   if (kind === "cloudflare" && c.origin !== target.cloudflare)
@@ -75,7 +91,12 @@ for (const kind of ["cloudflare", "supabase"]) {
           origin: c.origin,
           authorization: "Bearer " + c.token,
           cookie: c.cookie,
-          ...(kind === "supabase" ? { "x-poc-access": c.key } : {}),
+          ...(kind === "supabase"
+            ? {
+                "x-poc-access": c.key,
+                "x-poc-tester": hash(input.syntheticEmail),
+              }
+            : {}),
           ...(method === "GET" ? {} : { "content-type": "application/json" }),
         },
         body:

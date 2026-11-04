@@ -19,6 +19,8 @@ jobs:
       - run: node scripts/supabase-phase11-build.mjs
       - run: npx --yes deno@2.9.6 check .wrangler/phase11/supabase/functions/randomtools-phase11/index.js
       - run: node scripts/supabase-phase11-smoke.mjs
+      - run: node scripts/phase111-build.mjs
+      - run: npx wrangler deploy --config .wrangler/phase111/reference/wrangler.toml --dry-run
       - run: npm run build:firebase-poc
       - run: npx wrangler deploy --config experiments/firebase/wrangler.toml --dry-run
       - run: npm run check:backup
@@ -27,6 +29,7 @@ jobs:
       - run: npx wrangler deploy --config wrangler.api.toml --dry-run
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run test:firebase-ui
+      - run: npx playwright test --config playwright.phase111.config.ts
       - run: npm exec --yes --package firebase-tools@15.34.2 -- node scripts/firebase-poc-emulator.mjs
       - run: npm run test:e2e
       - run: npm run build:public-staging

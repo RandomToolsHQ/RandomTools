@@ -19,6 +19,7 @@ export type Config = {
   rateSecret: string;
   testers: Record<string, string>;
   serviceKey: string;
+  testExpiresAt: number;
 };
 export type Store = {
   rpc(name: string, body: Record<string, unknown>): Promise<any>;
@@ -31,6 +32,9 @@ export class Denied extends Error {
 export function validate(c: Config) {
   if (
     c.enabled !== "phase11-synthetic-only" ||
+    !Number.isSafeInteger(c.testExpiresAt) ||
+    c.testExpiresAt <= Math.floor(Date.now() / 1000) ||
+    c.testExpiresAt > Math.floor(Date.now() / 1000) + 7200 ||
     !/^[a-z]{20}$/.test(c.projectRef) ||
     (!/^https:\/\/[a-z0-9-]+\.pages\.dev$/.test(c.origin) &&
       !/^http:\/\/127\.0\.0\.1:54381$/.test(c.origin)) ||
@@ -77,6 +81,10 @@ export function makeAuthenticator(c: Config) {
     // and performs a live provider lookup before any database authorization.
     const email = uid ? c.testers[uid] : undefined;
     if (!email) throw new Denied(403);
+    // Only a trusted proxy/operator with the upstream access key can supply this
+    // binding. Browser input must never select the named gateway identity.
+    if (!equal(req.headers.get("x-poc-tester") || "", digest(email)))
+      throw new Denied(403);
     return identity(req, firebaseEnvironment(c), email);
   };
 }
@@ -170,7 +178,7 @@ export function createHandler(
         headers.set("access-control-allow-methods", "POST");
         headers.set(
           "access-control-allow-headers",
-          "authorization,content-type,x-poc-access",
+          "authorization,content-type,x-poc-access,x-poc-tester",
         );
         return new Response(null, { status: 204, headers });
       }

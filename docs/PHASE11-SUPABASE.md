@@ -1,5 +1,195 @@
 # Phase 11 — isolated Supabase/Firebase experiment
 
+## Phase 11.1 preparation — 5 November 2026
+
+### Approved resource setup completed
+
+The owner separately approved Spark creation and the restricted Cloudflare reference.
+Created Firebase `randomtools-supabase-auth-poc` (771458729298), Spark $0/month,
+with web app `randomtools-phase111-tests` and email/password only. Analytics,
+Gemini, Google OAuth and billing remain off. Public web configuration is stored
+in ignored local storage; no service-account key was generated.
+
+Created D1 `randomtools-phase11-baseline` (`a5985c4e-884f-4238-b641-28a1e7c13928`),
+verified empty before schema application, served from SYD. Created Worker version
+`d31782ae-2a6c-4b30-a573-51b01db25412`, workers.dev and preview URLs disabled.
+Pages deployment `0a5693c6` uses branch `phase111-test`, no Git connector, and binds
+only the new D1 and Worker. No provider or gateway secrets are set. Root, register,
+admin, API and asset probes all returned 503 with private/no-store at
+`https://randomtools-phase11-baseline.pages.dev`. This is an intentionally disabled
+reference, not an authenticated benchmark deployment. Existing environments remain unchanged.
+
+The new Supabase runtime and browser gateway below remain local candidates, not
+deployed. A fresh exact keyless IAM proposal for project 771458729298 is pending;
+earlier approvals for other projects are not reused. No hosted accepted samples
+or new CPU measurements exist yet.
+
+**MORE TESTING REQUIRED. Hosted accepted authentication/benchmarks are incomplete.**
+Resumed 619803c; [its full CI passed](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41814971977).
+Read-only checks confirm the existing Supabase legacy JWT gateway is ON, there are
+no custom secrets, and existing Cloudflare deployment IDs are unchanged. No new
+project, IAM, hosted deployment or secret change is authorized by Phase 11.1 alone.
+
+### First approval: separate Firebase project
+
+Proposed exact ID/name: `randomtools-supabase-auth-poc`, Spark, connected RandomTools
+Google account, no organization/billing account. Google console shows **11 remaining
+project slots**; Firebase lists one existing project and accepts the draft ID.
+This is observed eligibility, not reservation or guaranteed successful creation.
+Public Spark pricing explicitly requires no payment method. New project creation
+does not change the existing project's users, keys, quotas or settings.
+
+Proposed configuration: one test web app; email/password only; Analytics, Gemini,
+Developer Programme, Google OAuth, Identity Platform upgrade and paid APIs off.
+No Firestore, Storage, Cloud Functions or service-account private key. Planned test
+origins: loopback 127.0.0.1 and the new Phase 11 Pages hostnames below. Registration
+is not published; application access remains an explicit three-UID allowlist. A
+public Firebase API key is not itself a provider-side signup allowlist, so do not
+claim it prevents all provider registrations. Stop on billing/new terms/security
+verification. This proposal was subsequently approved and created as recorded above.
+
+References: [Spark](https://firebase.google.com/pricing),
+[project quotas](https://firebase.google.com/docs/projects/learn-more),
+[Auth quotas](https://firebase.google.com/docs/auth/limits).
+
+### Separate reference approval profile — not deployed
+
+Cloudflare account: `5c172e2e4c51cfc7dc512c96825b2912`.
+
+| New resource | Exact configuration |
+| --- | --- |
+| D1 randomtools-phase11-baseline | New empty schema from current migrations + Firebase POC session schema; unique randomtools-phase11-reference-v1 isolation marker. Oceania location hint oc, not a location guarantee. |
+| Worker randomtools-phase11-baseline-api | Current Firebase API verification/session/D1/Pro/admin code; workers.dev and preview URLs off. New D1 binding only. |
+| Pages randomtools-phase11-baseline | randomtools-phase11-baseline.pages.dev; service binding only to the new Worker and GATE_DB only to the new D1. Test branch phase111-test, no Git connector. All assets/routes gated. |
+
+Inventory shows two existing D1 databases (Free limit ten) and only the original
+three Pages projects. Proposed names do not collide in this account; global
+availability is rechecked when creation is approved. No automatic alternative name.
+Preserve genuine D1 24d38e43-b765-4d21-b713-fce893d7317d and Firebase POC D1
+caf619cb-a7c4-46fe-b5ac-c8245827d16a. Before any remote migration, verify returned
+new database ID/name/account and empty app schema; never substitute either old ID.
+Generated configs deliberately contain all-zero database IDs until explicit setup.
+
+`scripts/phase111-build.mjs` builds locally only, with a substitution manifest and
+hashes. API logic is unchanged except the new isolation marker. Pages additionally
+uses the new Firebase auth domain and fixes two credential-form policies: preserve
+the built-in restrictive form CSP and use Referrer-Policy same-origin on that form.
+Native Chromium reproduced Origin:null with no-referrer; accepting null is NOT the
+fix. Exact Origin checks remain. Existing hosted/reference source files are not
+modified by generation. Wrangler dry-run passes; no deployment is implied.
+Initially no test credentials/provider secrets are set, so routes fail closed.
+Secret configuration, Firebase/IAM and the separate Supabase browser gateway are
+not covered by this reference-resource profile. Persistent-resource deletion needs
+separate approval; synthetic fixture cleanup is scoped to recorded UIDs/IDs only.
+
+### Supabase configuration approval still required
+
+The existing legacy JWT gateway accepts Supabase legacy JWTs, not Google Firebase
+ID tokens. A proposed later change turns that legacy check OFF only after an
+approved, validated candidate and exact synthetic UID configuration are ready.
+This removes a platform filter; it does not remove application authentication.
+Mandatory controls remain: 256-bit server access key, named tester hash bound to
+the signed staging identity, Firebase RSA/issuer/audience/expiry/verified-mail/live
+revocation/disabled lookup, owned app session, fresh Postgres Pro/admin checks,
+exact Origin, body limits and distributed rate limits. Anonymous preflight cannot
+access data. No service credential is sent to browsers.
+
+Local candidate now requires x-poc-tester = SHA256(allowlisted verified email),
+set by the trusted proxy/operator, not browser input. With the upstream key kept
+server-side, a tester cannot combine their gateway session with another tester's
+token/cookie. It also requires POC_TEST_EXPIRES_AT, an integer Unix deadline at
+most two hours ahead. Missing, expired or overlong leases fail closed. These are
+**local changes only**; the deployed 75c8e9b artifact is still unchanged and locked.
+
+Later approval must name candidate commit/hash, exact synthetic UIDs/emails,
+POC_ORIGIN, secret names/recipients, deadline and rollback. Set POC_ENABLED last;
+remove it first on failure. The new custom secret names are POC_ENABLED,
+POC_PROJECT_REF, POC_ORIGIN, POC_ACCESS_KEY, POC_RATE_SECRET, POC_TESTERS,
+POC_TEST_EXPIRES_AT, FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY. The runtime service
+credential stays server-side. No secret was created or configured in this phase.
+
+### Keyless lifecycle authorization proposal — not granted
+
+Only after project creation reveals its project number, request fresh scoped
+approval for randomtools-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com.
+Proposed Auth permissions: firebaseauth.users.get, users.sendEmail, users.update,
+users.delete. Operator randomtoolshq@gmail.com gets only iam.serviceAccounts.getAccessToken
+on this service account, with conditional two-hour grants and 15-minute impersonated
+tokens. Any API enablement/Cloud Shell source authorization must be disclosed too.
+No permanent key, exported source credentials, ADC refresh token or reused old IAM
+grant. These privileges cover every provider user in the new project; the harness
+must accept only recorded synthetic UIDs. Cleanup removes bindings/account/custom
+roles/tokens, verifies denial and baseline policy, deletes only synthetic fixtures
+and ends the privileged session. No actual new IAM action has been attempted.
+
+### Local same-origin gateway — separate later deployment approval
+
+Candidate: randomtools-phase11-supabase.pages.dev with a new small D1
+randomtools-phase11-gateway for staging rate limits/isolation only. It is not
+created. The worker reuses the real named HMAC staging gate, forces a fixed upstream
+URL, overrides forged access/tester headers, forwards only the app cookie and JWT,
+rejects redirects, limits request/response bytes and rejects unsafe Set-Cookie.
+Secure/HttpOnly/SameSite=Strict app cookies become first-party on Pages. The upstream
+access key is never a frontend setting. Browser app calls only /api/phase11.
+
+Desktop/mobile fixture tests exercise the real HMAC gate and native cookie jar,
+HttpOnly visibility, reload persistence, cross-site Strict-cookie omission and
+logout removal. All traffic is intercepted; provider replies are synthetic. The
+mock transport asserts a 303/cookie and follows it manually because Playwright
+interception does not cover automatic redirect chains. This is not real hosted
+Firebase, redirect/TLS, recovery or session-revocation evidence. Hosted gateway
+approval comes only after API-only hosted validation; do not publish this fixture.
+
+### Benchmark and capacity preparation
+
+The harness now verifies the recorded email and immutable user ID, sends the named
+tester binding, accepts only the planned test origin/loopback, and separates maximum
+successful latency from maximum attempt latency. Rejected authentication can never
+produce a successful maximum/percentile/CPU sample. Auth/authorization denials,
+application rate responses and unclassified dependency failures are counted
+separately. Provider throttling remains unknown without supporting evidence.
+Do not label unclassified 503 as a definite database failure or provider throttle.
+
+Three rounds/backend remain 40 reads + 12 mixed operations each, concurrency one,
+1500 ms gaps, identical 512-character JSON payloads and exactly three recorded
+owned presets. Include unmeasured pre/postflights and logout in quota budgets.
+Original D1 preset mutations lack the candidate's transactional audit writes; this
+is a documented semantic/SQL-count difference, not an exactly identical database
+benchmark. Measure both direct API/backend and later proxy paths separately. All
+CPU/platform-isolate granularity and forced-cold limitations still apply.
+
+Capacity estimates use the prior 20 calls/day/user, 30-day month, 10% invocation
+reserve, 6 KiB base egress/call and 200 KiB app data/user assumptions:
+
+| Daily users | Monthly calls incl. reserve | Base egress before reserve | App storage | Invocation quota |
+| --- | ---: | ---: | ---: | --- |
+| 100 | 66,000 | 0.369 GB | 20.5 MB | Fits nominally |
+| 500 | 330,000 | 1.843 GB | 102.4 MB | Fits nominally |
+| 1,000 | 660,000 | 3.686 GB | 204.8 MB | Exceeds 500,000 |
+| 5,000 | 3,300,000 | 18.432 GB | 1,024 MB | Exceeds multiple quotas |
+
+These are not measured capacity. Each accepted API call requires one live Firebase
+lookup: roughly 60k/300k/600k/3m per month before retries and login/recovery. Average
+rates do not predict burst throttling. Assume 1% new signups and 1% password resets
+per daily cohort: about 1/5/10/50 verification and reset mails/day, within Spark's
+published 1,000 verification and 150 reset/day budgets; malicious demand can exhaust
+them. Signup limit is 100/IP/hour; token exchange and provider lookup have separate
+minute quotas. Do not activate Identity Platform (its Spark DAU rules differ) or SMS.
+If daily users are all new rather than recurring, identity/email budgets differ.
+Cloudflare's 100k/day account limit leaves no overhead at 5,000*20 external calls;
+CPU reliability is already an independent blocker. Do not double-count internal
+service-binding billing without checking actual platform accounting.
+
+Supabase Free still has a 500 MB database, 5 GB uncached egress, inactivity pausing
+after low activity over a week, no uptime SLA and off-site manual backup needs.
+The documented pause restore window is one year; this is not a tested recovery
+guarantee or substitute for exports. No keepalive scheme or paid upgrade. Cold
+startup costs/availability and regional latency remain unmeasured. See current
+[pricing](https://supabase.com/pricing), [pausing](https://supabase.com/docs/guides/platform/free-project-pausing),
+[D1 limits](https://developers.cloudflare.com/d1/platform/limits/),
+[location hints](https://developers.cloudflare.com/d1/configuration/data-location/)
+and [Cloudflare limits](https://developers.cloudflare.com/workers/platform/limits/).
+
 ## Approved hosted setup update
 
 The owner subsequently approved Supabase setup only. Schema rt11 and its three

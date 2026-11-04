@@ -5,6 +5,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { importPKCS8, SignJWT } from "jose";
 import { makeAuthenticator, type Config } from "../experiments/supabase/core";
+import { digest } from "../worker/security";
 const c: Config = {
   enabled: "phase11-synthetic-only",
   projectRef: "a".repeat(20),
@@ -14,6 +15,7 @@ const c: Config = {
   firebaseKey: "synthetic-public",
   rateSecret: "r".repeat(32),
   serviceKey: "synthetic-private",
+  testExpiresAt: Math.floor(Date.now() / 1000) + 3600,
   testers: { member: "phase11-00000000-member@example.com" },
 };
 let key: Awaited<ReturnType<typeof importPKCS8>>, cert: string;
@@ -94,7 +96,10 @@ function provider(profile: Record<string, unknown> = {}, status = 200) {
 }
 const request = (raw: string) =>
   new Request("https://synthetic.example", {
-    headers: { authorization: "Bearer " + raw },
+    headers: {
+      authorization: "Bearer " + raw,
+      "x-poc-tester": digest(c.testers.member),
+    },
   });
 it("real RSA verification plus uncached provider check every request", async () => {
   const mock = provider();
@@ -105,6 +110,18 @@ it("real RSA verification plus uncached provider check every request", async () 
   expect(
     mock.mock.calls.filter(([url]) => String(url).includes("accounts:lookup")),
   ).toHaveLength(2);
+});
+it("requires the trusted named staging identity to match the token allowlist entry", async () => {
+  provider();
+  const req = request(await jwt());
+  req.headers.set("x-poc-tester", digest("phase11-00000000-other@example.com"));
+  await expect(makeAuthenticator(c)(req)).rejects.toMatchObject({
+    status: 403,
+  });
+  req.headers.delete("x-poc-tester");
+  await expect(makeAuthenticator(c)(req)).rejects.toMatchObject({
+    status: 403,
+  });
 });
 it.each([
   { aud: "wrong" },

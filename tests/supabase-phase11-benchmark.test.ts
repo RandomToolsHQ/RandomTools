@@ -43,6 +43,8 @@ it("rejected authentication is never an eligible performance result", async () =
   expect(s.successes).toBe(0);
   expect(s.failures).toBe(1);
   expect(s.cpuMs).toBeNull();
+  expect(s.maxLatencyMs).toBeNull();
+  expect(s.authenticationOrAuthorizationFailures).toBe(1);
 });
 it("HTTP 200 for another owner is rejected", async () => {
   const s = await runSample(

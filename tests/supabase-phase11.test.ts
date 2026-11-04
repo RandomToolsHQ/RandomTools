@@ -20,6 +20,7 @@ const c: Config = {
   firebaseKey: "synthetic-public-key",
   rateSecret: "r".repeat(32),
   serviceKey: "synthetic-server-key",
+  testExpiresAt: ts() + 3600,
   testers: { member: "phase11-00000000-member@example.com" },
 };
 let db: PGlite;
@@ -398,3 +399,26 @@ it("missing/unknown token and existing Firebase project are rejected", async () 
     ).status,
   ).toBe(503);
 });
+it.each(["missing", "invalid", "expired", "overlong"])(
+  "missing, invalid, expired or overlong test lease fails before authorization (%s)",
+  async (kind) => {
+    const testExpiresAt =
+      kind === "missing"
+        ? undefined
+        : kind === "invalid"
+          ? NaN
+          : kind === "expired"
+            ? ts() - 1
+            : ts() + 7300;
+    const verify = vi.fn();
+    const store = { rpc: vi.fn() };
+    const handler = createHandler(
+      { ...c, testExpiresAt } as Config,
+      store,
+      verify,
+    );
+    expect((await handler(req())).status).toBe(503);
+    expect(verify).not.toHaveBeenCalled();
+    expect(store.rpc).not.toHaveBeenCalled();
+  },
+);

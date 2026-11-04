@@ -46,6 +46,7 @@ const values = {
     member: "phase11-00000000-member@example.com",
   }),
   SUPABASE_SERVICE_ROLE_KEY: "synthetic-runtime-key",
+  POC_TEST_EXPIRES_AT: String(Math.floor(Date.now() / 1000) + 3600),
 };
 globalThis.Deno.env.get = (name) => values[name];
 await import(

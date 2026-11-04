@@ -1,5 +1,22 @@
 # RandomTools implementation status
 
+## Phase 11.1 — isolated reference preparation, 5 November 2026
+
+Approved new Spark project `randomtools-supabase-auth-poc` (771458729298) created,
+email/password enabled; no billing, OAuth, IAM grants or permanent keys.
+Approved new Cloudflare reference D1/Worker/Pages created with secrets unset.
+Pages deployment `0a5693c6` denies root/account/admin/API/assets with 503/no-store.
+Existing public, Clerk, Firebase and Supabase deployments are preserved.
+
+Local gateway candidate fixes native form Origin handling without relaxing exact
+Origin validation, isolates named testers, and validates secure upstream cookies.
+Supabase candidate adds a fail-closed maximum two-hour test window. Benchmark
+summaries exclude rejected requests from accepted latency measurements.
+Full local unit/integration suite passed 245/245, Python controls 14/14 and new
+desktop/mobile browser checks 2/2. Typecheck, lint, dependency audit (zero findings),
+build smoke and Worker dry-run passed. Hosted auth/CPU evidence
+and temporary keyless authorization remain outstanding. See docs/PHASE11-SUPABASE.md.
+
 ## Phase 11 — approved hosted Supabase setup, 4 November 2026
 
 The owner approved the isolated Supabase setup; separate Spark creation remains

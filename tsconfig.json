@@ -20,11 +20,13 @@
     "tests",
     "experiments/firebase",
     "experiments/supabase",
+    "experiments/phase111",
     "vite.config.ts",
     "playwright.config.ts",
     "playwright.public.config.ts",
     "playwright.private.config.ts",
     "playwright.firebase.config.ts",
+    "playwright.phase111.config.ts",
     "private-e2e"
   ]
 }
