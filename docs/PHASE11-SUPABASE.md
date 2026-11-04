@@ -141,6 +141,11 @@ cannot grant them new Pro, and re-enabling the account does not restore revoked 
 The bundled JavaScript artifact is checked by Deno; strict source types are checked
 by TypeScript. The emitted-entry smoke host supplies an empty Deno environment and
 verifies fail-closed responses without network/cloud access. CI never deploys it.
+It also verifies a fully configured synthetic environment reaches the key gate.
+Deployment variables are POC_ENABLED, POC_PROJECT_REF, POC_ORIGIN, POC_ACCESS_KEY,
+POC_RATE_SECRET, POC_TESTERS, FIREBASE_PROJECT_ID and FIREBASE_WEB_API_KEY. Only
+the built-in SUPABASE_SERVICE_ROLE_KEY is read; never create custom secrets with
+the reserved SUPABASE_ prefix. Start with POC_ENABLED unset until review is complete.
 
 ## Matched workload preparation
 

@@ -12,7 +12,7 @@ try {
 }
 const c: Config = {
   enabled: env("POC_ENABLED"),
-  projectRef: env("SUPABASE_PROJECT_REF"),
+  projectRef: env("POC_PROJECT_REF"),
   origin: env("POC_ORIGIN"),
   accessKey: env("POC_ACCESS_KEY"),
   firebaseProject: env("FIREBASE_PROJECT_ID"),
