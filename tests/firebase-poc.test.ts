@@ -319,6 +319,40 @@ it("requires a verified owned application session and fresh Pro for Firebase IP 
     (await call("/pro/ip-lookup", raw, body, "POST", session.cookie)).status,
   ).toBe(403);
 });
+it("enforces the 100-preset limit atomically under concurrent hosted-adapter writes", async () => {
+  const session = await login();
+  const me = (await (
+    await call("/me", session.token, undefined, "GET", session.cookie)
+  ).json()) as any;
+  await db
+    .prepare("UPDATE users SET role='admin' WHERE id=?")
+    .bind(me.user.id)
+    .run();
+  await db
+    .prepare(
+      "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM n WHERE x<99) INSERT INTO saved_presets SELECT ?||x,?,'preset','Synthetic quota','{}',1 FROM n",
+    )
+    .bind("quota_" + uid, me.user.id)
+    .run();
+  const results = await Promise.all(
+    [1, 2].map((n) =>
+      call(
+        "/pro/presets",
+        session.token,
+        { name: "Concurrent synthetic " + n, data: {} },
+        "POST",
+        session.cookie,
+      ),
+    ),
+  );
+  expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+  expect(
+    await db
+      .prepare("SELECT count(*) AS n FROM saved_presets WHERE user_id=?")
+      .bind(me.user.id)
+      .first("n"),
+  ).toBe(100);
+});
 it("never links a matching legacy/Clerk email or accepts Firebase custom claims as Admin/Pro", async () => {
   await db
     .prepare(

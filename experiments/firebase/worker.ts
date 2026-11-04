@@ -333,11 +333,16 @@ async function handle(req: Request, env: Env) {
           .strict()
           .parse(await input(req));
         const id = crypto.randomUUID();
-        await env.DB.prepare(
-          "INSERT INTO saved_presets VALUES(?,?,'preset',?,?,?)",
+        const stored = await env.DB.prepare(
+          "INSERT INTO saved_presets SELECT ?,?,'preset',?,?,? WHERE (SELECT count(*) FROM saved_presets WHERE user_id=?)<100",
         )
-          .bind(id, user.id, b.name, JSON.stringify(b.data), now())
+          .bind(id, user.id, b.name, JSON.stringify(b.data), now(), user.id)
           .run();
+        if (!stored.meta.changes)
+          throw new FirebaseError(
+            409,
+            "Preset limit reached (100). Remove a saved record first.",
+          );
         return json({ id });
       }
       if (req.method === "DELETE") {

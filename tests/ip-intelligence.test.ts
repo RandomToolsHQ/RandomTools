@@ -118,7 +118,10 @@ beforeAll(async () => {
     await db.exec(await readFile("migrations/" + f, "utf8"));
 });
 afterAll(async () => await mf?.dispose());
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 beforeEach(async () => {
   await db.exec("DELETE FROM users; DELETE FROM rate_limits;");
   for (const [id, role] of [
@@ -241,6 +244,7 @@ it("uses only the fixed free HTTPS provider and never persists searched IPs/resu
   ).toBe(0);
 });
 it("enforces per-user/shared budgets and provider cooldown with safe retry hints", async () => {
+  vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 4, 2, 0, 1));
   for (let i = 0; i < 3; i++) expect((await call()).status).toBe(200);
   const limited = await call();
   expect(limited.status).toBe(429);
@@ -257,6 +261,15 @@ it("enforces per-user/shared budgets and provider cooldown with safe retry hints
     "DELETE FROM rate_limits; INSERT INTO rate_limits VALUES('ip-lookup:burst',5,9999999999);",
   );
   expect((await call()).status).toBe(429);
+  expect(fetch).toHaveBeenCalledTimes(4);
+});
+it("resets the fixed user budget only after its window expires", async () => {
+  const start = Date.UTC(2026, 10, 4, 2, 0, 1);
+  const clock = vi.spyOn(Date, "now").mockReturnValue(start);
+  for (let i = 0; i < 3; i++) expect((await call()).status).toBe(200);
+  expect((await call()).status).toBe(429);
+  clock.mockReturnValue(start + 60000);
+  expect((await call()).status).toBe(200);
   expect(fetch).toHaveBeenCalledTimes(4);
 });
 it("fails safely on timeouts, oversized bodies, malformed JSON, mismatched IPs and invalid provider attributes", async () => {
