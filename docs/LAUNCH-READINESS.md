@@ -1,5 +1,12 @@
 # Launch readiness — 3 November 2026
 
+The approved Supabase rt11 schema and disabled Edge Function are now provisioned.
+Hosted rollback-only SQL permission/ownership/Pro/admin tests pass with zero
+retained fixtures. There are no custom configuration secrets and the additional
+legacy JWT gate remains on. No actual hosted Firebase sessions or accepted CPU
+benchmarks have run. Separate Spark setup and later privileged permissions remain
+approval gates; no public account launch or migration is authorized.
+
 Phase 11 local [Supabase/Firebase evaluation](PHASE11-SUPABASE.md) is **MORE TESTING
 REQUIRED**. It does not approve migration, public registration or new production
 infrastructure. Larger documented CPU limits are not measured performance. Hosted

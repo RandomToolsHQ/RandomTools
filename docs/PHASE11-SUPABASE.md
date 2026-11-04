@@ -1,5 +1,37 @@
 # Phase 11 — isolated Supabase/Firebase experiment
 
+## Approved hosted setup update
+
+The owner subsequently approved Supabase setup only. Schema rt11 and its three
+server-only RPCs now exist in the existing Free Sydney project. Catalog verification
+confirmed seven enabled+forced RLS tables, no direct browser/runtime table grants,
+correct RPC execution grants and the isolation marker. The exact reviewed SQL was
+executed transactionally after a zero-collision preflight. Supabase's scanner did
+not recognize RLS enabled in the DO block; catalog verification confirmed it.
+
+The disabled-by-default function `randomtools-phase11` is deployed at
+https://ijlohzzqszyhncglqsfq.supabase.co/functions/v1/randomtools-phase11 from source
+75c8e9b. Local bundle SHA256:
+c09a1d83e8f523301bb02a4f24aa6052359f17d5fea4a9de82c9f1cabc120bc0.
+Deployed source was retrieved and matched after line-ending normalization. The
+additional legacy JWT gateway remains enabled and no custom secrets exist. All
+three negative HTTP probes returned 401. Dashboard timings/zero CPU for rejected
+requests are excluded from performance evidence; the real authenticated handler
+path has not been exercised. Do not infer CPU compliance or successful cold starts.
+
+`experiments/supabase/hosted-smoke.sql` passed on actual hosted Postgres and in
+PGlite. It requires the empty rt11 namespace, creates explicit synthetic fixtures,
+checks client/runtime role denial, Pro/admin/ownership/session/audit behavior, then
+rolls back. Hosted postflight users/sessions/grants/presets/audit rows all returned
+zero. No Firebase users/provider verification or deletion were involved. This is
+database integration evidence, not end-to-end Firebase validation.
+
+No enable flag, tester key or provider configuration was stored; no permanent keys,
+new IAM or billing were used. Preserve the approved schema/function; resource
+deletion needs approval. Existing public/Clerk/Firebase deployments and D1 remain
+unchanged. Separate Spark creation, later keyless permissions, matched reference
+clone, browser cookie boundary and real accepted workloads remain pending.
+
 ## Decision and evidence, 4 November 2026
 
 **MORE TESTING REQUIRED. No migration or public launch is approved.**
@@ -164,8 +196,9 @@ success message alone cannot establish cleanup. Dependency failure leaves cleanu
 unverified and the sample ineligible, even if earlier HTTP requests succeeded.
 
 The harness targets only a new `randomtools-phase11-baseline.pages.dev` reference,
-not the current Firebase POC. That clone, separate Firebase identities and Supabase
-deployment are not provisioned. Thus no new hosted comparison is claimed. Existing
+not the current Firebase POC. That clone and separate Firebase identities are not
+provisioned. The Supabase function exists but remains unconfigured. No new hosted
+comparison is claimed. Existing
 historical measurements remain a baseline, not a matched latency comparison.
 The Postgres slice audits preset mutations while the original POC did not; review
 that operation-count difference before claiming an exactly matched DB comparison.
@@ -221,11 +254,12 @@ transactions; retain immutable issuer+subject mappings, Founder safeguards,
 manual approvals, cleanup, signed deletion webhook replay protection and audit
 retention. Rehearse exports/restores; no genuine data is copied by this POC.
 
-Pending owner approvals cover only prepared Supabase schema/RPC/isolated-function
-setup and a separate Spark project. They do not authorize a new Google IAM grant,
+Supabase setup approval was received and applied as recorded above. Separate Spark
+creation remains pending. That approval does not authorize a new Google IAM grant,
 permanent key, production migration or new Cloudflare reference clone. Hosted
 verification needs fresh, separately approved short-lived keyless privileges in
 the new project; earlier grants were removed. Resource deletion requires approval.
 After tests remove recorded synthetic users/grants/data, tokens and temporary
 permissions, verify policy and fixture counts, preserve minimal audit evidence.
-No cloud cleanup is currently required because no hosted changes were made.
+No synthetic records or temporary credentials remain. Keep the approved rt11
+schema/RPCs and disabled function; do not delete these cloud resources without approval.

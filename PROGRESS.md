@@ -1,5 +1,42 @@
 # RandomTools implementation status
 
+## Phase 11 — approved hosted Supabase setup, 4 November 2026
+
+The owner approved the isolated Supabase setup; separate Spark creation remains
+pending. In Free Sydney project ijlohzzqszyhncglqsfq, the exact reviewed SQL was
+applied after confirming zero namespace/RPC collisions and zero public tables.
+Seven rt11 tables have enabled+forced RLS; direct table permissions are denied
+to anon/authenticated/service_role. Exactly three SECURITY DEFINER RPCs have the
+reviewed server-only execution grants. No existing schema was replaced.
+
+Deployed randomtools-phase11 from application source 75c8e9b, bundle SHA256
+c09a1d83e8f523301bb02a4f24aa6052359f17d5fea4a9de82c9f1cabc120bc0.
+Retrieved deployed code matches after LF normalization. Endpoint:
+https://ijlohzzqszyhncglqsfq.supabase.co/functions/v1/randomtools-phase11
+The additional legacy Supabase JWT gateway remains ON; there are no custom
+secrets, enable flag, tester keys or Firebase settings. Anonymous/invalid-token
+requests return 401. These rejected requests are not CPU/latency benchmark samples.
+No authenticated API or browser flows are claimed to work yet.
+
+Hosted rollback-only SQL smoke passed actual database role denials, fresh Pro/admin
+checks, all grant durations, disabled-user revocation, expiry, owned presets/export,
+cross-user/session denials, logout/tombstone handling and audit coverage. This tests
+trusted-server RPCs, not Firebase authentication or provider deletion. All fixtures,
+temporary synthetic admin/grants and audit inserts rolled back; users, sessions,
+grants, presets and audit rows are zero. The seven approved tables, marker and three
+RPCs remain. No cloud resource deletion or cleanup permission is implied.
+
+The rollback smoke also passes local real-Postgres testing. Previous source
+75c8e9b passed [full CI 41805760345](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41805760345),
+390 checks; the new SQL/test/documentation milestone runs CI separately. Public,
+Clerk and Firebase deployment IDs and original Firebase D1 counts were rechecked
+unchanged. No Google IAM, genuine identity, payments or billing changes were made.
+
+Remaining: owner approval for the separate Spark project; later scoped keyless
+authorization, restricted browser proxy/reference clone and actual hosted accepted
+authentication/CPU/latency workloads. Supabase CLI is unauthenticated; no PAT or
+private service-account key was generated. Decision remains MORE TESTING REQUIRED.
+
 ## Phase 11 — isolated Supabase preparation, 4 November 2026
 
 Branch `codex/phase11-supabase-poc` continues bfd3811. The earlier Clerk-based

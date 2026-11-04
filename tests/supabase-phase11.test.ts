@@ -249,6 +249,19 @@ it("atomic rate limit persists rejected attempts", async () => {
   );
   expect(result.filter(Boolean)).toHaveLength(20);
 });
+it("hosted rollback-only smoke validates the full SQL matrix without retaining fixtures", async () => {
+  await db.exec("TRUNCATE rt11.users CASCADE; TRUNCATE rt11.audit,rt11.rate;");
+  const result = await db.exec(
+    await readFile("experiments/supabase/hosted-smoke.sql", "utf8"),
+  );
+  expect(result.at(-1)?.rows[0]).toMatchObject({
+    users: 0,
+    sessions: 0,
+    grants: 0,
+    presets: 0,
+    audit_rows: 0,
+  });
+});
 const auth = {
   subject: "member",
   issuer: "https://securetoken.google.com/randomtools-supabase-auth-poc",
