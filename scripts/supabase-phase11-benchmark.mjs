@@ -3,9 +3,14 @@ import { decodeJwt } from "jose";
 import { runSample, pause } from "../experiments/supabase/benchmark.mjs";
 /* global fetch, AbortSignal */
 const root = ".wrangler/phase11";
-const input = JSON.parse(
-  await readFile(root + "/benchmark-credentials.json", "utf8"),
-);
+let input;
+try {
+  input = JSON.parse(
+    await readFile(root + "/benchmark-credentials.json", "utf8"),
+  );
+} catch {
+  throw Error("Ignored benchmark credential file is missing or invalid");
+}
 if (
   !/^phase11-[a-f0-9-]{36}$/.test(input.runId) ||
   !input.subject ||
@@ -19,8 +24,13 @@ const target = {
 };
 const adapters = [];
 for (const kind of ["cloudflare", "supabase"]) {
-  const c = input[kind],
+  const c = input[kind];
+  let claims;
+  try {
     claims = decodeJwt(c.token);
+  } catch {
+    throw Error("Fresh synthetic token required");
+  }
   if (
     claims.sub !== input.subject ||
     claims.aud !== "randomtools-supabase-auth-poc" ||

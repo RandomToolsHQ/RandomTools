@@ -1,5 +1,35 @@
 import { it, expect } from "vitest";
+import { mkdtemp, mkdir, writeFile, unlink, rmdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve, join } from "node:path";
+import { spawnSync } from "node:child_process";
 import { runSample } from "../experiments/supabase/benchmark.mjs";
+
+it("malformed local credential JSON never appears in operator errors", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "randomtools-phase11-"));
+  const parent = join(dir, ".wrangler"),
+    root = join(parent, "phase11"),
+    file = join(root, "benchmark-credentials.json");
+  await mkdir(root, { recursive: true });
+  try {
+    await writeFile(file, '{"accessKey":"synthetic-confidential-marker",');
+    const result = spawnSync(
+      process.execPath,
+      [resolve("scripts/supabase-phase11-benchmark.mjs")],
+      { cwd: dir, encoding: "utf8", windowsHide: true, timeout: 10000 },
+    );
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("credential file is missing or invalid");
+    expect(result.stderr + result.stdout).not.toContain(
+      "synthetic-confidential-marker",
+    );
+  } finally {
+    await unlink(file);
+    await rmdir(root);
+    await rmdir(parent);
+    await rmdir(dir);
+  }
+});
 it("rejected authentication is never an eligible performance result", async () => {
   const s = await runSample(
     {

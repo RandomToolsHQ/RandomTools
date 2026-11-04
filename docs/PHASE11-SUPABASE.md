@@ -9,6 +9,7 @@ subscriptions and a larger schema. This slice retains Firebase and manual grants
 The existing Free Sydney project `ijlohzzqszyhncglqsfq` is healthy and showed no
 recorded migrations. Inspection was read-only. No Supabase resources, grants,
 secrets or schemas were created/changed during local preparation.
+The Table Editor subsequently confirmed no public tables/views and no rt11 schema.
 
 Public Pages 81de8536-ed2f-4204-941b-ada7fcba1c2a, Clerk Pages
 5d3c61a8-a658-409a-941d-1a07147dcfd6, Firebase Pages
@@ -131,6 +132,10 @@ transaction rollback. It does not establish hosted PostgREST roles/pool concurre
 networking, regional routing, CPU, shared capacity or true cold starts. Its concurrent
 calls exercise queued transactions, not multiple independent hosted connections.
 JWT tests use actual RSA signatures with synthetic keys/provider responses.
+The final targeted suites passed 45 tests; an earlier full local run passed 221
+tests before the final credential-error redaction guard was added. Final CI runs
+the expanded regression suite. A subprocess regression confirms malformed local
+credential JSON never appears in benchmark errors. No real credentials were used.
 The bundled JavaScript artifact is checked by Deno; strict source types are checked
 by TypeScript. The emitted-entry smoke host supplies an empty Deno environment and
 verifies fail-closed responses without network/cloud access. CI never deploys it.

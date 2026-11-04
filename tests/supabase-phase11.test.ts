@@ -100,14 +100,16 @@ it("fresh profile and ordinary/admin authorization", async () => {
 it.each(["7d", "30d", "permanent"])(
   "audited %s grant and immediate revocation",
   async (duration) => {
+    const before = ts();
     await q("admin", "grant", { userId: "member", duration });
     expect((await q("member", "me")).pro).toBe(true);
     const grants = await db.query<any>("SELECT * FROM rt11.grants");
-    expect(grants.rows[0].expires_at).toBe(
-      duration === "permanent"
-        ? null
-        : ts() + (duration === "7d" ? 604800 : 2592000),
-    );
+    if (duration === "permanent") expect(grants.rows[0].expires_at).toBeNull();
+    else {
+      const days = duration === "7d" ? 604800 : 2592000;
+      expect(grants.rows[0].expires_at).toBeGreaterThanOrEqual(before + days);
+      expect(grants.rows[0].expires_at).toBeLessThanOrEqual(ts() + days);
+    }
     await q("admin", "revoke", { userId: "member" });
     expect((await q("member", "me")).pro).toBe(false);
     const audit = await db.query<any>("SELECT action FROM rt11.audit");

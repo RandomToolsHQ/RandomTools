@@ -20,7 +20,12 @@ privileged and requires explicit hosted approval; it is never in browser code.
 
 Added real Postgres/WASM isolation, concurrency/quota, audit rollback, deletion,
 session and grant tests; actual RSA/provider-state tests; and benchmark guards.
-First targeted suites passed 44 tests. Full regression/CI is verified separately.
+Final targeted suites passed 45 tests. The earlier full local regression passed
+221 tests before the additional credential-redaction guard; final CI runs the
+expanded suite. The benchmark launcher now sanitizes malformed credential JSON
+errors, with a subprocess regression verifying no credential fragment is printed.
+Grant expiry tests bound both sides of the real SQL clock to avoid second-boundary
+flakiness without changing runtime expiry. Full regression/CI is verified separately.
 Build bundles only to ignored `.wrangler/phase11`; emitted JavaScript passes Deno
 checking and a fail-closed entry smoke host. No deployment occurs from CI.
 
