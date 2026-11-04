@@ -84,6 +84,19 @@ export async function runSample(adapter, { run, kind, runId, sleep = pause }) {
       cleanup.push(false);
     }
   }
+  // Outside the measured interval: verify exact original fixtures really remain.
+  // A successful DELETE response alone is not proof of cleanup on both backends.
+  let baselineRestored = false;
+  try {
+    const r = await adapter.call("workspace");
+    baselineRestored =
+      r.status === 200 &&
+      Array.isArray(r.data?.presets) &&
+      r.data.presets.length === 3 &&
+      r.data.presets.every((p) => adapter.presetIds.includes(p.id));
+  } catch {
+    /* Unknown cleanup remains unverified. */
+  }
   const summary = summarize(attempts);
   return {
     run,
@@ -102,11 +115,12 @@ export async function runSample(adapter, { run, kind, runId, sleep = pause }) {
       "Unknown unless independently correlated with provider metadata",
     concurrency: 1,
     stoppedOnFailure: !!error,
-    cleanupVerified: cleanup.every(Boolean),
+    cleanupVerified: cleanup.every(Boolean) && baselineRestored,
     eligible:
       !error &&
       summary.failures === 0 &&
       summary.requests === (kind === "reads" ? 40 : 12) &&
-      cleanup.every(Boolean),
+      cleanup.every(Boolean) &&
+      baselineRestored,
   };
 }

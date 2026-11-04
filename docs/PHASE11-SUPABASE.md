@@ -152,6 +152,9 @@ order per round. Header/JSON protocol normalization is explicit. Every result mu
 match the expected owner and recorded fixture IDs; stop on failure. Failed and
 rejected auth requests never enter successful CPU samples. Cleanup deletes only
 new IDs returned by that run and logs out both backend sessions.
+An unmeasured postflight verifies exactly the original three preset IDs; a DELETE
+success message alone cannot establish cleanup. Dependency failure leaves cleanup
+unverified and the sample ineligible, even if earlier HTTP requests succeeded.
 
 The harness targets only a new `randomtools-phase11-baseline.pages.dev` reference,
 not the current Firebase POC. That clone, separate Firebase identities and Supabase

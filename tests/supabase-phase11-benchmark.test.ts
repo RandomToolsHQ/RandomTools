@@ -94,6 +94,6 @@ it("failed mixed workload cleans only exact newly returned fixture IDs", async (
     { run: 1, kind: "mixed", runId: "synthetic", sleep: async () => {} },
   );
   expect(s.eligible).toBe(false);
-  expect(s.cleanupVerified).toBe(true);
+  expect(s.cleanupVerified).toBe(false); // Dependency outage prevents final verification.
   expect(deleted).toEqual(["created-here"]);
 });
