@@ -1,5 +1,30 @@
 # Launch readiness — 3 November 2026
 
+## Hosted decision — 4 November 2026
+
+Official hosted verification/recovery, password changes, disabled/revoked/deleted
+users, fresh D1 Pro/admin permissions and ownership passed with synthetic accounts.
+Temporary IAM grants/service account/roles were removed and token denial verified.
+Only the isolated Firebase POC was updated; public and Clerk sites are unchanged.
+See [measurements and cleanup evidence](../PROGRESS.md#hosted-firebase-validation-completed--4-november-2026).
+
+Firebase Spark is technically viable as an authentication candidate on pages.dev.
+Public launch and automatic migration remain NO-GO: repeated mixed workloads
+exceeded Workers Free 10 ms CPU despite zero runtime failures. Do not weaken live
+revocation/permissions or infer reliability from successful burst tolerance.
+Inbox delivery, approved synthetic Google OAuth, abuse/recovery review, backup and
+migration rehearsal remain gates. No genuine account or privilege was changed.
+
+A possible next separately approved experiment is API plus Postgres on Supabase
+Free, preserving Firebase/Auth and the public Pages frontend. Its documented
+[Edge runtime](https://supabase.com/docs/guides/functions/limits) allows 2 seconds
+CPU/request and 150 seconds wall duration on Free. That is a measurable CPU-budget
+opportunity, not measured application performance or a recommendation to migrate.
+It requires adapting D1 SQL/transactions and evaluating free project inactivity,
+backups, quotas, operational reliability and secret handling. Do not add a
+Supabase-to-D1 proxy hop or switch hosting without approval. Existing isolated
+prototype work must be reviewed before another experiment.
+
 ## Phase 10 candidate boundary — 4 November 2026
 
 The release-readiness branch adds default-off IP Intelligence Lookup and saved

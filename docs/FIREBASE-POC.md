@@ -1,5 +1,41 @@
 # Phase 9 — isolated Firebase Spark proof of concept
 
+## Current hosted result — 4 November 2026
+
+The hosted lifecycle gates described as blocked in historical sections below were
+subsequently exercised with three verified synthetic users and short-lived keyless
+impersonation. See [current evidence and CPU table](../PROGRESS.md#hosted-firebase-validation-completed--4-november-2026).
+Public/Clerk deployments remain unchanged; only restricted Firebase Pages
+bbf58e34-9d62-47c8-b775-8384b8b5e38e and Worker
+9315cec5-3272-4bfc-b454-e609e3f38cdf were updated from validated 3d11136.
+
+Official verification/recovery links, password changes, disable/revoke/delete,
+independent sessions, D1 ownership, export, Pro grants/expiry/revocation, admin
+denials and audit events passed. Hosted UI: 34/34 desktop/mobile checks. The
+100-preset limit passed. Temporary roles, grants, users and test presets were
+removed; only minimal audit/identity tombstones remain. IAM policy was compared
+against baseline after both bindings, the test service account and custom roles
+were removed. Old token denial verified; temporary credentials removed. Cloud Shell
+GCE credentials reject gcloud revoke, so the VM session was terminated via Restart,
+then closed without authorizing a new VM. No permanent private key was issued.
+
+Three read runs (120 requests) stayed below 10 ms trace CPU; three mixed runs
+(36 requests) had 17/36 above 10 ms, max 17 ms (GraphQL p99 up to 17.981 ms).
+All accepted samples succeeded; no benchmark provider throttling or CPU errors.
+Firebase action-link throttling and gateway harness errors occurred outside these
+workloads and are retained separately. This is NO-GO for reliable current Workers
+Free mixed-workload compliance. Firebase Spark remains a viable Auth candidate,
+not an approved public replacement. Inbox delivery, synthetic Google OAuth and
+production abuse/recovery validation remain gates. No migration/public signup.
+
+Operator tooling: firebase-poc-remote.py runs only in the approved Cloud Shell;
+firebase-poc-hosted.mjs targets the fixed isolated D1 and exact synthetic fixture
+ledger. Never copy genuine data. Obtain fresh approval before a new IAM window.
+firebase-poc-tail.mjs captures only metadata and CPU (no raw logs/headers); the
+reporter rejects incomplete, failed, unauthenticated or mismatched sample counts.
+Raw secrets and fixture credentials belong only in ignored temporary storage and
+must be removed after cleanup. Realtime tracing creates no paid Tail Worker.
+
 This branch does not replace Clerk, migrate accounts or enable public signup.
 The public 21-tool deployment and restricted Clerk environment remain unchanged.
 Never apply `experiments/firebase/0006_poc_sessions.sql` to genuine staging.

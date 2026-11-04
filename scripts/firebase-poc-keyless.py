@@ -142,13 +142,14 @@ elif action == 'cleanup':
                 token_denied = False
         except urllib.error.HTTPError as error:
             token_denied = error.code in (401, 403)
-        token_path.unlink()
+        if token_denied:
+            token_path.unlink()
     policy_after = json.loads(cli('projects', 'get-iam-policy', PROJECT, '--format=json'))
     accounts_after = json.loads(cli('iam', 'service-accounts', 'list', '--project=' + PROJECT, '--format=json'))
     preserved = bindings(policy_after) == bindings(ledger['policyBefore']) and sorted(a['email'] for a in accounts_after) == ledger['accountsBefore']
     save('cleanup-evidence.json', {'project': PROJECT, 'unrelatedIamPreserved': preserved, 'temporaryTokenDenied': token_denied})
     print(json.dumps({'project': PROJECT, 'temporaryBindingsRemoved': True, 'temporaryServiceAccountRemoved': True,
-                      'customRolesDeleted': True, 'remoteTokenFileRemoved': True,
+                      'customRolesDeleted': True, 'remoteTokenFileRemoved': not token_path.exists(),
                       'unrelatedIamPreserved': preserved, 'temporaryTokenDenied': token_denied}))
     require(preserved, 'IAM baseline mismatch needs operator review')
     require(token_denied is not False, 'Token denial not yet verified; wait for expiry and recheck')

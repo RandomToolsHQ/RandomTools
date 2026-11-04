@@ -7,6 +7,7 @@ import runpy
 import subprocess
 import sys
 import tempfile
+import urllib.error
 import unittest
 from unittest.mock import patch
 
@@ -62,6 +63,55 @@ class GuardTests(unittest.TestCase):
 
     def test_existing_role(self):
         self.rejected('Existing test roles', existing_role=True)
+
+    def cleanup_probe(self, denied):
+        with tempfile.TemporaryDirectory() as directory:
+            home = pathlib.Path(directory)
+            root = home / '.randomtools-phase91'
+            root.mkdir()
+            ledger = {'project': PROJECT, 'serviceAccount': SA, 'condition': 'synthetic',
+                      'mintBinding': False, 'authBinding': False, 'serviceAccountCreated': False,
+                      'createdRoles': [], 'policyBefore': {'bindings': []}, 'accountsBefore': []}
+            (root / 'ledger.json').write_text(json.dumps(ledger))
+            (root / 'admin-access.json').write_text(json.dumps({'accessToken': 'synthetic-access-token'}))
+
+            def fake_cli(args, **_kwargs):
+                command = args[1:]
+                if command[:3] == ['config', 'get-value', 'project']:
+                    value = PROJECT
+                elif command[:2] == ['auth', 'list']:
+                    value = ACCOUNT
+                elif command[:3] == ['billing', 'projects', 'describe']:
+                    value = json.dumps({'billingEnabled': False})
+                elif command[:2] == ['projects', 'get-iam-policy']:
+                    value = json.dumps({'bindings': []})
+                elif command[:3] == ['iam', 'service-accounts', 'list']:
+                    value = '[]'
+                else:
+                    self.fail('Unexpected cleanup command')
+                return subprocess.CompletedProcess(args, 0, value, '')
+
+            outcome = urllib.error.HTTPError('https://identitytoolkit.googleapis.com', 403, 'Forbidden', {}, None) if denied else None
+            with patch.object(pathlib.Path, 'home', return_value=home), \
+                    patch('subprocess.run', side_effect=fake_cli), \
+                    patch('urllib.request.urlopen', side_effect=outcome) as opening, \
+                    patch.object(sys, 'argv', [str(HELPER), 'cleanup']), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                if not denied:
+                    opening.return_value.__enter__.return_value = io.BytesIO(b'{}')
+                    with self.assertRaisesRegex(RuntimeError, 'Token denial not yet verified'):
+                        runpy.run_path(str(HELPER), run_name='__main__')
+                else:
+                    runpy.run_path(str(HELPER), run_name='__main__')
+            self.assertEqual((root / 'admin-access.json').exists(), not denied)
+            evidence = json.loads((root / 'cleanup-evidence.json').read_text())
+            self.assertIs(evidence['temporaryTokenDenied'], denied)
+
+    def test_keeps_token_for_recheck_until_denial_is_verified(self):
+        self.cleanup_probe(False)
+
+    def test_removes_token_after_verified_denial(self):
+        self.cleanup_probe(True)
 
 
 if __name__ == '__main__':

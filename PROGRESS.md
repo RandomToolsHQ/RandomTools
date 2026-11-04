@@ -1,5 +1,74 @@
 # RandomTools implementation status
 
+## Hosted Firebase validation completed — 4 November 2026
+
+This section supersedes the historical blocked/deployment statements below.
+Source 3d11136 passed [CI 41761967310](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41761967310).
+Only the isolated Firebase POC was updated: Pages bbf58e34-9d62-47c8-b775-8384b8b5e38e,
+Worker 9315cec5-3272-4bfc-b454-e609e3f38cdf. Public and Clerk deployment IDs
+remain unchanged. No schema migration, genuine account change or public launch.
+
+Three synthetic accounts completed official email action verification, password
+sign-in and immutable D1 mapping. Hosted checks covered expired/invalid tokens,
+independent-session disable/revocation, refresh-token rejection, logout, application
+session expiry, ownership, export, manual Pro request/denial/approval, 7/30-day and
+permanent grants, expiry/revocation, admin denials and audit events. Official recovery
+and password change passed, including consumed-link and previous-password rejection.
+The actual account-deletion API removed the member at Firebase and cascaded D1 data.
+All remaining synthetic Firebase users were deleted. Former admin immediately lost
+Admin and inherent Pro. D1 users/grants/sessions/presets returned to zero; minimal
+audit records and identity tombstones remain. The 100-preset cap passed hosted
+testing; 97 precisely identified quota fixtures were removed, preserving originals.
+
+Hosted desktop/mobile account/admin checks: 34/34, including accessibility and
+overflow. Functional ledger records 150 passing checks and three historical harness
+failures: a mismatched gateway/session cookie pair, redundant gateway authentication
+rate limiting, and an expired gateway during cleanup. Corrected, server-validated
+gateway contexts passed the intended tests; failures were retained as evidence.
+Verification initially encountered Firebase TOO_MANY_ATTEMPTS_TRY_LATER; paced
+official actions subsequently succeeded. Inbox delivery and Google OAuth remain
+untested (no approved synthetic Google identity). In-memory persistence is deliberate;
+browser reload requires sign-in. Hosted tests do not establish production readiness.
+
+Repeated successful owned workloads on Worker 9315cec5 (milliseconds):
+
+| Workload/run | Requests | CPU p50 | CPU p95 | CPU p99 | Trace max | Client p50/p95/p99 |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Populated reads 1 | 40 | 5.441 | 7.155 | 9.516 | 9 | 603.84 / 728.40 / 731.95 |
+| Populated reads 2 | 40 | 5.264 | 7.341 | 7.519 | 7 | 598.88 / 636.54 / 640.35 |
+| Populated reads 3 | 40 | 5.582 | 7.771 | 9.615 | 9 | 606.97 / 682.82 / 702.55 |
+| Mixed read/write 1 | 12 | 11.465 | 17.981 | 17.981 | 17 | 722.40 / 1035.46 / 1035.46 |
+| Mixed read/write 2 | 12 | 10.213 | 15.188 | 15.188 | 15 | 662.69 / 795.48 / 795.48 |
+| Mixed read/write 3 | 12 | 11.347 | 14.907 | 14.907 | 14 | 663.97 / 709.50 / 709.50 |
+
+CPU quantiles are adaptive GraphQL estimates; coarse boundary buckets include one
+extra read preflight and two mixed preflights in first runs. Trace maxima are
+whole-millisecond realtime measurements matched to exactly 40/12 accepted owned
+requests per run. Mixed traces exceeded 10 ms on 17/36 requests. All 156 workload
+requests succeeded: zero authentication failures, provider throttles or CPU-limit
+errors. Negative security requests were excluded. First observed authenticated
+request used 16 ms CPU/766 ms wall; it is a cold-start candidate, not a forced-cold
+measurement. Successful bursts do not prove reliable Workers Free compliance.
+
+Recommendation: Firebase Spark is a viable authentication candidate on pages.dev,
+but NO-GO for public migration/launch on this backend until mixed CPU reliability
+and remaining delivery/OAuth/abuse/recovery gates are resolved. Stop speculative
+optimization. A separately approved isolated Supabase API/Postgres benchmark is a
+possible next experiment, not a migration recommendation. Keep both current sites.
+
+Fresh approved two-hour IAM setup used only four Firebase Auth permissions and
+15-minute impersonated tokens. Both bindings removed; test service account and two
+custom roles deleted; old token denied; project IAM/service-account baseline matched.
+Remote token/fixture files removed, no permanent key or source credentials exported.
+gcloud cannot revoke Cloud Shell's GCE-provided credentials; the VM session was
+explicitly terminated using Restart and the tab closed without authorizing a new VM.
+Local temporary fixture credentials were removed after cleanup verification.
+Billing remained unattached/disabled; live payments and IP lookup remain disabled.
+
+Local final unit/integration tests: 177/177; offline IAM guards: 7/7.
+Typecheck and lint passed. Final operator/documentation milestone CI is recorded
+in the branch workflow after push; earlier source CI is linked above.
+
 Full implementation CI for 5cce6db passed
 [run 41689385444](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41689385444):
 175 unit/integration tests, five offline IAM-helper guards, 84 application

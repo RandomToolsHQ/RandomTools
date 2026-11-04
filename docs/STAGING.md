@@ -1,5 +1,20 @@
 # Cloudflare staging — current deployment
 
+## Restricted Firebase validation update — 4 November 2026
+
+Only the isolated Firebase POC was updated from source 3d11136: Pages
+bbf58e34-9d62-47c8-b775-8384b8b5e38e, API
+9315cec5-3272-4bfc-b454-e609e3f38cdf, D1
+caf619cb-a7c4-46fe-b5ac-c8245827d16a. No schema migration. Prior rollback IDs:
+Pages 55c23b3b-75fa-404a-89b5-c3d3775c2026, API
+e9d241c3-cce9-4563-acfe-d8685112c936. Named gateway, synthetic UID allowlist,
+live Firebase session lookup and fresh D1 permissions remain mandatory.
+workers.dev/preview URLs remain disabled; IP lookup/payments remain off.
+Public and Clerk deployment IDs were verified unchanged after testing.
+All synthetic users/grants/sessions/presets removed; genuine D1 was never bound.
+See [hosted evidence and outstanding launch gates](../PROGRESS.md#hosted-firebase-validation-completed--4-november-2026).
+The historical no-deployment statements below describe the earlier local milestone.
+
 ## Phase 10 candidate — not deployed
 
 The IP Intelligence Lookup endpoint is disabled unless IP_LOOKUP_ENABLED is

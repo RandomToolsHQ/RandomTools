@@ -29,6 +29,21 @@ const userId =
     .update("https://securetoken.google.com/" + project + "\n" + member.uid)
     .digest("hex");
 const jar = new Map();
+// Reuse only an already issued gateway cookie from this exact synthetic run.
+// The gateway verifies it server-side; no authentication decision is cached.
+try {
+  const state = JSON.parse(await readFile(root + "/hosted-state.json", "utf8"));
+  if (
+    state.project === project &&
+    state.runId === fixture.runId &&
+    state.people?.member?.userId === userId
+  ) {
+    const gate = state.people.member.cookies?.["__Host-rt_staging"];
+    if (typeof gate === "string") jar.set("__Host-rt_staging", gate);
+  }
+} catch {
+  /* First run has no reusable gateway session. */
+}
 async function request(path, method = "GET", body, bearer) {
   const r = await fetch(origin + path, {
     method,
@@ -72,12 +87,16 @@ async function request(path, method = "GET", body, bearer) {
     cpuLimit: /(?:Error\s*1102|CPU time limit)/i.test(text),
   };
 }
-const gate = await request(
-  "/__staging",
-  "POST",
-  new URLSearchParams({ email: member.email, key: member.gateKey }),
-);
-if (gate.status !== 303)
+const existingGate = jar.size ? await request("/") : null;
+const gate =
+  existingGate?.status === 200
+    ? existingGate
+    : await request(
+        "/__staging",
+        "POST",
+        new URLSearchParams({ email: member.email, key: member.gateKey }),
+      );
+if (![200, 303].includes(gate.status))
   throw Error("Private gateway rejected workload; no benchmark started");
 const signed = await fetch(
   "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" +

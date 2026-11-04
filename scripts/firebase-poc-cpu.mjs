@@ -5,7 +5,13 @@ import console from "node:console";
 import { cpuEligible, summarize } from "./firebase-poc-evidence.mjs";
 /* global fetch */
 const root = ".wrangler/phase9",
-  work = JSON.parse(await readFile(root + "/workloads.json", "utf8"));
+  mixed = process.argv.includes("--mixed"),
+  work = JSON.parse(
+    await readFile(
+      root + (mixed ? "/workloads-mixed.json" : "/workloads.json"),
+      "utf8",
+    ),
+  );
 if (
   work.project !== "randomtools-firebase-poc" ||
   work.script !== "randomtools-firebase-poc-api" ||
@@ -82,5 +88,8 @@ const report = {
   limitation:
     "Adaptive/sampled analytics; correlate with observed HTTP and provider errors. Warm bounded requests cannot establish Free-plan reliability.",
 };
-await writeFile(root + "/cpu.json", JSON.stringify(report, null, 2));
+await writeFile(
+  root + (mixed ? "/cpu-mixed.json" : "/cpu.json"),
+  JSON.stringify(report, null, 2),
+);
 console.log(JSON.stringify(report));
