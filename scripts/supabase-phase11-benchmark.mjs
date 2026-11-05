@@ -3,7 +3,7 @@ import { decodeJwt } from "jose";
 import { createHash } from "node:crypto";
 import { runSample, pause } from "../experiments/supabase/benchmark.mjs";
 /* global fetch, AbortSignal */
-const root = ".wrangler/phase11";
+const root = ".wrangler/phase111/private";
 let input;
 try {
   input = JSON.parse(

@@ -22,6 +22,7 @@ jobs:
       - run: npx --yes deno@2.9.6 check .wrangler/phase11/supabase/functions/randomtools-phase11/index.js
       - run: node scripts/supabase-phase11-smoke.mjs
       - run: node scripts/phase111-build.mjs
+      - run: node scripts/phase111-browser-build.mjs --synthetic
       - run: npx wrangler deploy --config .wrangler/phase111/reference/wrangler.toml --dry-run
       - run: npm run build:firebase-poc
       - run: npx wrangler deploy --config experiments/firebase/wrangler.toml --dry-run

@@ -2,6 +2,21 @@
 
 ## Phase 11.1 — isolated reference preparation, 5 November 2026
 
+Matched hosted benchmark completed: 312/312 accepted requests, 156/backend, three
+read and mixed rounds each, all owned fixtures restored, zero HTTP/auth/rate/CPU
+errors. Direct Cloudflare CPU coverage 156/156: p50/p95/p99/max 7/10/19/21 ms;
+5 requests exceeded 10 ms. No Workers Free reliability claim. Aggregate latency
+p50/p95/p99/max ms: Cloudflare 665/876/1247/1532; Supabase 506/1249/3478/4930.
+Supabase dashboard CPU 74 ms average/252 ms max includes functional/negative calls,
+not accepted-only CPU percentiles. Provider/session revocation, fresh Pro expiry/
+revocation and isolation checks passed. Both benchmark logouts passed.
+
+Local gateway fix discards Supabase bot cookies without forwarding them or relaxing
+application cookie validation. Synthetic-only browser console remains local, not
+approved for hosting yet. Current local suite 253 tests + 6 browser checks passes;
+see PHASE11-SUPABASE.md for limitations. Temporary privileges and credentials are
+still active within the approved window; cleanup remains required.
+
 Follow-up: 2971802 CI passed. With separately approved corrected service account
 rt-phase111-auth-tests, temporary keyless IAM bindings expire at 12:30 pm Brisbane
 on 5 November. No permanent key; minted 15-minute token stays in Cloud Shell.

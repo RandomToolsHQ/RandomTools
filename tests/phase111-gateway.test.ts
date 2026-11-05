@@ -180,6 +180,23 @@ it("preserves secure first-party session cookie and explicit logout clearing", a
     expect(r.headers.get("access-control-allow-origin")).toBeNull();
   }
 });
+it("discards Supabase edge bot cookies while preserving the validated application cookie", async () => {
+  const cookie =
+    "__Host-rt_phase11=" +
+    app +
+    "; Secure; HttpOnly; SameSite=Strict; Path=/; Max-Age=1800";
+  const headers = new Headers();
+  headers.append("set-cookie", cookie);
+  headers.append(
+    "set-cookie",
+    "__cf_bm=synthetic; HttpOnly; SameSite=None; Secure; Path=/; Domain=supabase.co",
+  );
+  const response = await createGateway(gatewayFixture(), async () =>
+    Response.json({}, { headers }),
+  )(request());
+  expect(response.status).toBe(200);
+  expect(response.headers.getSetCookie()).toEqual([cookie]);
+});
 it("network errors, bad responses and wrong DB isolation fail closed", async () => {
   expect(
     (

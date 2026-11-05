@@ -58,7 +58,11 @@ function cookieHeader(req: Request) {
   return parts[0] || "";
 }
 function responseCookie(response: Response) {
-  const values = response.headers.getSetCookie();
+  // Supabase's edge proxy can add a bot-management cookie. It is unrelated to
+  // our session and must never be forwarded onto the first-party test origin.
+  const values = response.headers
+    .getSetCookie()
+    .filter((value) => !value.startsWith("__cf_bm="));
   if (!values.length) return undefined;
   if (values.length !== 1)
     throw new AccessError(503, "Invalid session response");

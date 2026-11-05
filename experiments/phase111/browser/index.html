@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Restricted API browser test · RandomTools</title>
+  <link rel="stylesheet" href="/test.css" />
+  <main>
+    <h1>Restricted synthetic API testing</h1>
+    <p>
+      This isolated test console has no registration or payment flows. Use only
+      recorded synthetic accounts.
+    </p>
+    <p>
+      Firebase credentials stay in memory. Reloading requires sign-in again; the
+      application cookie alone cannot authorize requests.
+    </p>
+    <form id="login">
+      <label for="email">Synthetic account email</label>
+      <input
+        id="email"
+        type="email"
+        autocomplete="username"
+        required
+        maxlength="254"
+      />
+      <label for="password">Test password</label>
+      <input
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        required
+      />
+      <button id="signin">Sign in</button>
+    </form>
+    <section aria-label="Authenticated tests">
+      <button id="account" disabled>Read account</button>
+      <button id="workspace" disabled>Read Pro workspace</button>
+      <button id="admin" disabled>Test admin access</button>
+      <button id="save" disabled>Create synthetic preset</button>
+      <button id="remove" disabled>Delete created preset</button>
+      <button id="logout" disabled>Log out</button>
+    </section>
+    <p id="status" role="status" aria-live="polite">Sign-in required.</p>
+    <p id="error" role="alert"></p>
+    <pre id="result" tabindex="0" role="region" aria-label="API result"></pre>
+  </main>
+  <script type="module" src="/test.js"></script>
+</html>

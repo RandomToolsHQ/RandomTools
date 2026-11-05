@@ -2,6 +2,69 @@
 
 ## Phase 11.1 preparation — 5 November 2026
 
+### Matched hosted benchmark — 5 November, 10:54–11:08 am Brisbane
+
+**312/312 accepted requests; 156 per backend.** Three rounds/backend, each with
+40 alternating account/populated-workspace reads and 12 mixed create/read/delete/
+account operations. Same verified synthetic member, three baseline presets,
+concurrency one, 1500 ms pacing, alternating backend order. All twelve intervals
+were eligible and restored their exact baseline fixtures. Both final logouts
+succeeded. No HTTP/authentication/authorization/rate-limit/dependency/CPU-limit
+responses occurred in these intervals. Provider throttling has no independent
+counter; do not equate absent observed failures with a provider-wide zero count.
+
+| Backend (156 accepted requests) | Latency p50 | p95 | p99 | Maximum |
+| --- | ---: | ---: | ---: | ---: |
+| Cloudflare reference | 665 ms | 876 ms | 1247 ms | 1532 ms |
+| Supabase direct Edge endpoint | 506 ms | 1249 ms | 3478 ms | 4930 ms |
+
+Cloudflare direct realtime CPU coverage matched all 156 accepted requests exactly,
+all status 200/outcome ok/nontruncated, version 26abd500-9bc2-491d-9912-1523c042818e.
+Aggregate CPU p50/p95/p99/max: **7/10/19/21 ms**; **5/156 exceeded 10 ms**.
+
+| Round/workload | CPU n | p50 | p95 | p99/max | Above 10 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 reads | 40 | 7 | 10 | 11 | 2 |
+| 1 mixed | 12 | 6 | 21 | 21 | 1 |
+| 2 reads | 40 | 8 | 9 | 10 | 0 |
+| 2 mixed | 12 | 6 | 19 | 19 | 2 |
+| 3 reads | 40 | 5 | 8 | 8 | 0 |
+| 3 mixed | 12 | 6 | 8 | 8 | 0 |
+
+CPU units are milliseconds, nearest-rank quantiles. Small mixed rounds make p95
+and p99 the maximum. No Free-plan reliability claim is justified by these results,
+even though no request returned a CPU-limit error. No authentication/revocation/
+permission checks were removed or cached. No further speculative optimization.
+
+The Supabase one-hour dashboard showed 235 invocations, average CPU 74 ms and
+maximum CPU 252 ms. This is **an unfiltered platform aggregate including functional
+and negative tests**, not accepted-only CPU benchmarking or per-round percentiles.
+Supabase accepted-only CPU p50/p95/p99 remain unknown. Handler duration is wall time.
+First requests here were not proven cold starts; no pause/resume rehearsal was run.
+
+Current decision: **MORE TESTING REQUIRED; no migration or public-account launch.**
+Supabase improved medians but had worse tails; the reference still exceeded the
+10 ms target. Same-origin browser/proxy CPU, recovery/deletion, cleanup, full-schema
+porting and operational recovery remain gates. Keep public/Clerk deployments.
+
+### Local browser candidate
+
+A separate synthetic-only console has no registration, OAuth or payment controls.
+Firebase state stays in memory; reload requires sign-in again and cookies alone
+never authorize. Real server keys are absent from its bundle. A returned preset ID
+is validated; failed logout never claims server revocation. Accessibility found an
+invalid label on the results panel, fixed with an explicit region role.
+
+Hosted Supabase adds a __cf_bm cookie. The local proxy now discards only that
+provider cookie, never forwards it, and retains strict validation of the sole
+application cookie. Unknown/duplicate/unsafe application cookies still fail
+closed. Regression test added. This proxy change is NOT deployed yet.
+
+Local validation: 253 unit/integration tests, 6 desktop/mobile browser tests
+(including axe), typecheck and lint pass. Earlier operator-order and extra-cookie
+failures remain in ignored raw evidence; the corrected cases passed. Benchmark
+intervals contain none of those failed/rejected setup requests.
+
 ### Keyless provider validation checkpoint
 
 CI for 2971802 passed: https://github.com/RandomToolsHQ/RandomTools/actions/runs/41885580607.
@@ -22,7 +85,9 @@ owned provider lookups succeeded. Disabling the `other` tester caused its prior
 ID token to be rejected; it was re-enabled, then provider-wide revocation also
 caused the old token to be rejected. These are provider checks, not application
 authorization, browser recovery or CPU evidence. Application fixtures have not
-been seeded. Temporary IAM cleanup remains pending while controlled tests run.
+been seeded at this earlier checkpoint; the later approved API activation seeded
+exactly the recorded identities and audited temporary roles/grants. Temporary IAM
+cleanup remains pending while controlled tests run.
 
 `phase111-keyless*.py` and `phase111-remote*.py` are scoped operator harnesses,
 separate from the old Firebase POC. Fifteen offline guard tests pass under Python
@@ -48,9 +113,11 @@ admin, API and asset probes all returned 503 with private/no-store at
 reference, not an authenticated benchmark deployment. Existing environments remain unchanged.
 
 The new Supabase runtime and browser gateway below remain local candidates, not
-deployed. A fresh exact keyless IAM proposal for project 771458729298 is pending;
-earlier approvals for other projects are not reused. No hosted accepted samples
-or new CPU measurements exist yet.
+deployed at that initial checkpoint. Subsequent separate approvals enabled API-only
+testing and the exact Supabase candidate d492d51a09b4040aefc19fd695c451fe0ade9859047ce22cb29172e329f3b6e8.
+The prior c09a1d83 bundle was copied from the visible editor and hash-verified for
+rollback. The legacy JWT gate was turned off under approval; all custom test/Firebase/
+live-session/permission controls remain. API activation expires 12:25 pm Brisbane.
 
 **MORE TESTING REQUIRED. Hosted accepted authentication/benchmarks are incomplete.**
 Resumed 619803c; [its full CI passed](https://github.com/RandomToolsHQ/RandomTools/actions/runs/41814971977).
@@ -133,12 +200,13 @@ POC_ORIGIN, secret names/recipients, deadline and rollback. Set POC_ENABLED last
 remove it first on failure. The new custom secret names are POC_ENABLED,
 POC_PROJECT_REF, POC_ORIGIN, POC_ACCESS_KEY, POC_RATE_SECRET, POC_TESTERS,
 POC_TEST_EXPIRES_AT, FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY. The runtime service
-credential stays server-side. No secret was created or configured in this phase.
+credential stays server-side. The owner subsequently approved this exact bounded
+configuration; it is active only for the recorded synthetic run pending cleanup.
 
-### Keyless lifecycle authorization proposal — not granted
+### Keyless lifecycle authorization — approved and temporarily active
 
 Fresh scoped approval was requested for project 771458729298 and
-randomtools-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com.
+the corrected rt-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com.
 Proposed Auth permissions: firebaseauth.users.get, users.sendEmail, users.update,
 users.delete. Operator randomtoolshq@gmail.com gets only iam.serviceAccounts.getAccessToken
 on this service account, with conditional two-hour grants and 15-minute impersonated
