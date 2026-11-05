@@ -2,6 +2,34 @@
 
 ## Phase 11.1 preparation — 5 November 2026
 
+### Keyless provider validation checkpoint
+
+CI for 2971802 passed: https://github.com/RandomToolsHQ/RandomTools/actions/runs/41885580607.
+The owner approved a two-hour keyless setup. Google rejected the originally
+proposed service-account name (over 30 characters) before creating that account.
+The owner then explicitly approved the corrected identity
+`rt-phase111-auth-tests@randomtools-supabase-auth-poc.iam.gserviceaccount.com`.
+The two exact custom roles/bindings were created with expiry
+2026-11-05T02:30:00Z (12:30 pm Brisbane). IAM/IAM Credentials APIs were enabled
+after verifying billing disabled and unattached. No permanent keys were created.
+Initial mint requests returned 403 during propagation; a later 900-second token
+succeeded and stayed in Cloud Shell. These are not benchmark samples.
+
+Recorded run `phase11-ac0da51f-e5e6-4d61-bec5-6b192eb80b27` contains three new
+synthetic users only. Real official verification links succeeded for all three;
+reusing each consumed action failed. All three verified password sign-ins and
+owned provider lookups succeeded. Disabling the `other` tester caused its prior
+ID token to be rejected; it was re-enabled, then provider-wide revocation also
+caused the old token to be rejected. These are provider checks, not application
+authorization, browser recovery or CPU evidence. Application fixtures have not
+been seeded. Temporary IAM cleanup remains pending while controlled tests run.
+
+`phase111-keyless*.py` and `phase111-remote*.py` are scoped operator harnesses,
+separate from the old Firebase POC. Fifteen offline guard tests pass under Python
+optimization. The new name-length regression fails before any cloud access.
+`phase111-fixtures.mjs` refuses an existing ledger; client sessions stay ignored
+and owner-restricted. Existing genuine accounts are never accepted by the harness.
+
 ### Approved resource setup completed
 
 The owner separately approved Spark creation and the restricted Cloudflare reference.

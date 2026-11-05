@@ -2,6 +2,14 @@
 
 ## Phase 11.1 — isolated reference preparation, 5 November 2026
 
+Follow-up: 2971802 CI passed. With separately approved corrected service account
+rt-phase111-auth-tests, temporary keyless IAM bindings expire at 12:30 pm Brisbane
+on 5 November. No permanent key; minted 15-minute token stays in Cloud Shell.
+Three recorded synthetic users passed official email verification/single-use
+actions and verified login. Provider disabled-user and revoked-token denials
+passed. No application Admin/Pro fixtures seeded; API activation approvals remain
+pending. IAM/provider fixture cleanup remains pending during the controlled run.
+
 Approved new Spark project `randomtools-supabase-auth-poc` (771458729298) created,
 email/password enabled; no billing, OAuth, IAM grants or permanent keys.
 Approved new Cloudflare reference D1/Worker/Pages created with secrets unset.

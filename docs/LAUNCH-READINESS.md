@@ -1,5 +1,11 @@
 # Launch readiness — 3 November 2026
 
+5 November checkpoint: separate Spark project and fail-closed Cloudflare reference
+are provisioned under explicit approvals. Keyless synthetic provider verification,
+login, disable and revocation checks passed. Matched accepted hosted backend
+benchmarks, application lifecycle checks and cleanup remain outstanding. Existing
+public/Clerk deployments are unchanged; recommendation remains MORE TESTING REQUIRED.
+
 The approved Supabase rt11 schema and disabled Edge Function are now provisioned.
 Hosted rollback-only SQL permission/ownership/Pro/admin tests pass with zero
 retained fixtures. There are no custom configuration secrets and the additional
