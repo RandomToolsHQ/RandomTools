@@ -110,6 +110,7 @@ try {
   const mode = process.argv[2];
   if (mode === "prepare" || mode === "sessions") {
     for (const label of ["admin", "member", "other"]) {
+      if (mode === "sessions" && state.people[label].deleted === true) continue;
       state.people[label].token = signed.sessions[label].idToken;
       let r = await call(label, "session");
       await check(label + " real hosted session", r.status === 200, r.status);
@@ -224,6 +225,130 @@ try {
   } else if (["disabled", "revoked"].includes(mode)) {
     const r = await call("member", "me");
     await check(mode + " member app access denied", r.status === 401, r.status);
+  } else if (mode === "recovery-admin-denied") {
+    const r = await call("admin", "me");
+    await check(
+      "recovery revokes prior synthetic admin application session",
+      r.status === 401,
+      r.status,
+    );
+  } else if (mode === "delete-other") {
+    const r = await call("other", "account-delete", { confirmation: "DELETE" });
+    await check(
+      "real owned synthetic account deletion",
+      r.status === 200 && r.data.deleted === true,
+      r.status,
+    );
+    const denied = await call("other", "me");
+    await check(
+      "deleted user immediately denied",
+      denied.status === 401,
+      denied.status,
+    );
+    other.deleted = true;
+  } else if (mode === "concurrent") {
+    const results = await Promise.all(
+      Array.from({ length: 3 }, (_, i) =>
+        call("member", "save", {
+          name: "Synthetic concurrent " + i,
+          data: { text: "Bounded synthetic concurrency" },
+        }),
+      ),
+    );
+    const created = results
+      .filter((r) => r.status === 200 && typeof r.data.id === "string")
+      .map((r) => r.data.id);
+    try {
+      await check(
+        "three bounded concurrent owned writes",
+        created.length === 3 && new Set(created).size === 3,
+      );
+      const workspace = await call("member", "workspace");
+      await check(
+        "concurrent writes preserve exact ownership",
+        workspace.status === 200 &&
+          workspace.data.presets.length === 6 &&
+          workspace.data.presets.every((p) =>
+            [...member.presetIds, ...created].includes(p.id),
+          ),
+        workspace.status,
+      );
+    } finally {
+      for (const id of created)
+        await check(
+          "exact concurrent fixture removed",
+          (await call("member", "delete", { id })).status === 200,
+        );
+    }
+    const workspace = await call("member", "workspace");
+    await check(
+      "concurrent test baseline restored",
+      workspace.status === 200 &&
+        workspace.data.presets.length === 3 &&
+        workspace.data.presets.every((p) => member.presetIds.includes(p.id)),
+      workspace.status,
+    );
+  } else if (mode === "expired-session") {
+    const r = await call("member", "me");
+    await check(
+      "expired application session denied",
+      r.status === 401,
+      r.status,
+    );
+  } else if (mode === "protected-admin") {
+    const r = await call("admin", "account-delete", { confirmation: "DELETE" });
+    await check("admin self-deletion protected", r.status === 403, r.status);
+    const profile = await call("admin", "me");
+    await check(
+      "protected admin record preserved",
+      profile.status === 200 && profile.data.user.role === "admin",
+      profile.status,
+    );
+  } else if (mode === "abuse") {
+    const headers = {
+      origin: a.supabase.POC_ORIGIN,
+      "content-type": "application/json",
+      "x-poc-access": a.supabase.POC_ACCESS_KEY,
+      "x-poc-tester": hash(member.email),
+      authorization: "Bearer invalid",
+    };
+    for (const [name, body, status] of [
+      ["malformed JSON", "{", 400],
+      ["oversized body", "x".repeat(16385), 413],
+    ]) {
+      const r = await fetch(url, {
+        method: "POST",
+        headers,
+        body,
+        signal: AbortSignal.timeout(15000),
+      });
+      await r.arrayBuffer();
+      await check(
+        name + " denied before provider",
+        r.status === status,
+        r.status,
+      );
+    }
+    const statuses = [];
+    for (let batch = 0; batch < 5; batch++)
+      statuses.push(
+        ...(await Promise.all(
+          Array.from({ length: 5 }, async () => {
+            const r = await fetch(url, {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ operation: "me" }),
+              signal: AbortSignal.timeout(15000),
+            });
+            await r.arrayBuffer();
+            return r.status;
+          }),
+        )),
+      );
+    await check(
+      "bounded malformed-token burst is rate limited",
+      statuses.includes(429) && statuses.every((x) => [401, 429].includes(x)),
+    );
   } else if (mode === "expired-pro") {
     const r = await call("member", "workspace");
     await check(

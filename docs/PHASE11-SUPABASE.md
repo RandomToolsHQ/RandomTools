@@ -1,5 +1,52 @@
 # Phase 11 — isolated Supabase/Firebase experiment
 
+## Phase 11.1 — expired-window cleanup checkpoint, 5 November 2026
+
+Resumed at 6:04 pm Brisbane, after the approved 12:25 pm test deadline and
+12:30 pm IAM deadline. The browser gateway approval was not used to extend either
+window: randomtools-phase11-supabase Pages/D1 were not created or deployed. Frozen
+ZIP SHA256 acbaaa885d97bf4f76fcf5543958c6ad37b206f64f5312bdfaec0d26bf4f334e
+was reverified. Actual hosted browser-cookie/proxy CPU validation remains blocked
+until a fresh bounded activation and synthetic test setup is approved.
+
+Cleanup completed under explicit cleanup-only Cloud Shell authorization:
+- Temporary IAM bindings, service account and custom roles removed; policy/account
+  baseline preserved, expired test token denied and remote token file removed.
+- Remaining two recorded Firebase users deleted; project console shows no users.
+- New reference D1 and rt11 Postgres each have zero users/sessions/grants/presets;
+  each retains three cleanup audit entries. Deleted identity tombstones/audit
+  evidence remain intentionally; persistent resources/schema were not deleted.
+- All five reference Worker secrets and both Pages secrets removed; same reference
+  placeholder redeployed as 36722da6-27d6-4505-bf1d-2432b59e1c73. Root returns
+  503/private,no-store. workers.dev/previews were not enabled.
+- All nine Supabase custom test secrets removed, original legacy JWT gate restored
+  ON, original disabled bundle restored (LF-normalized SHA256
+  c09a1d83e8f523301bb02a4f24aa6052359f17d5fea4a9de82c9f1cabc120bc0).
+  Anonymous function invocation returns 401. Default secrets unchanged.
+- Temporary local passwords/tokens/cookies/test keys removed after retaining
+  sanitized checks. Remote recovered password/manifest removed. No permanent key.
+- Cloud Shell terminal exited and tab closed. Managed GCE source credentials cannot
+  be revoked with gcloud auth revoke; VM shutdown is unavailable in its container.
+  Do not describe source-credential revocation/VM destruction as verified.
+
+Local rerun: 253/253 unit/integration tests, typecheck, lint, 15 Python operator
+guard tests pass; dependency audit zero findings. CI for frozen source 79939ad
+passed run 41947279152. Previous public/Clerk/Firebase deployment IDs and original
+Firebase D1 zero-fixture counts were rechecked unchanged. No spending, payments,
+public account launch, migration, main merge or public deployment changes.
+
+Hosted evidence retained: 312/312 accepted benchmark requests, 156/backend; direct
+Cloudflare CPU p50/p95/p99/max 7/10/19/21 ms, 5/156 above 10 ms. Supabase accepted
+latency p50/p95/p99/max 506/1249/3478/4930 ms versus Cloudflare
+665/876/1247/1532 ms. Supabase accepted-only CPU percentiles remain unmeasured.
+Recovery/password change and prior-session denials passed on both backends; real
+other-user deletion revoked access on both. No fresh measurements after expiry.
+Recommendation remains more testing required; retain existing hosting.
+
+Earlier chronological checkpoints below describe historical states, not current
+activation or cleanup status.
+
+
 ## Phase 11.1 preparation — 5 November 2026
 
 ### Matched hosted benchmark — 5 November, 10:54–11:08 am Brisbane
@@ -506,7 +553,8 @@ OPTIONS, extra provider traffic and export spikes; reserve at least 10% overhead
 
 | Daily users | Monthly calls | With 10% overhead | Egress estimate | App database estimate | Fit |
 | --- | ---: | ---: | ---: | ---: | --- |
-| 100 | 60,000 | 66,000 | 0.369 GB | 20.5 MB | Plausible quota fit; performance unmeasured |
+| 100 | 60,000 | 66,000 | 0.369 GB | 20.5 MB | Estimated quota fit; full SaaS unvalidated |
+| 500 | 300,000 | 330,000 | 1.843 GB | 102.4 MB | Estimated quota fit; measured prototype is not full SaaS validation |
 | 1,000 | 600,000 | 660,000 | 3.686 GB | 204.8 MB | Exceeds function quota |
 | 5,000 | 3,000,000 | 3,300,000 | 18.432 GB | 1,024 MB | Exceeds function, egress and database budgets |
 
@@ -517,12 +565,20 @@ Firebase verification/reset quotas and provider abuse controls remain separate.
 The 500 MB cap is persistent; audit retention/compaction must be explicitly designed
 before lasting real accounts, not silently deleted to stay free.
 
+These are authenticated-account users, not anonymous visitors to the static free
+tools. Payload size is a major sensitivity: 100 near-4-KiB presets make a workspace
+response roughly 400 KiB before envelope overhead. If half of 20 daily calls were
+such reads, 500 daily users would approach 61 GB/month for those reads alone.
+The measured three-small-preset fixture cannot establish that larger workload's
+latency, CPU or egress fit. Pagination/limits and full-sized data need a reviewed
+production design and new bounded measurements.
+
 ## Architecture comparison and next gates
 
 | Option | Benefit | Risk / effort | Decision |
 | --- | --- | --- | --- |
 | Workers+D1+Firebase | Existing tested ownership, gateway, rollout and recovery | Reliable mixed CPU remains unproven at 10 ms | Keep operational, no public auth launch |
-| Edge+Postgres+Firebase | 2 s CPU budget; SQL transactions/locking; same Auth provider | Unmeasured latency/CPU, inactivity pause, manual backups, extra project secrets, SQL port | MORE TESTING REQUIRED |
+| Edge+Postgres+Firebase | Measured lower median latency; larger documented CPU budget; SQL transactions/locking | Worse measured tail latency, unfiltered CPU metrics, inactivity pause, manual backups, extra secrets and SQL port | MORE TESTING REQUIRED |
 | Pages same-origin proxy + Edge/Postgres | Supports secure first-party cookies, retains Pages frontend | Additional network hop; gateway CPU and failure path must also be measured | Justified only for restricted browser boundary |
 | Edge proxy back to existing D1 API | Little migration effort | Retains failing CPU path and adds hops | Reject |
 
@@ -532,12 +588,47 @@ rehearsals and hosted validation. This is a planning estimate, not authorization
 The 15 original tables (users, sessions, email_verification_tokens,
 password_reset_tokens, subscriptions, payment_events, membership_claims,
 user_preferences, saved_presets, tool_history, audit_logs, rate_limits,
-tool_availability, usage_daily, auth_identities) plus later pro_requests/pro_grants
+tool_availability, usage_daily, auth_identities) plus later pro_access_requests/pro_grants
 and favourites require a full inventory. Archive inactive payment history; do not
 enable it. Convert SQLite syntax/epoch fields/JSON and D1 batches to Postgres
 transactions; retain immutable issuer+subject mappings, Founder safeguards,
 manual approvals, cleanup, signed deletion webhook replay protection and audit
 retention. Rehearse exports/restores; no genuine data is copied by this POC.
+
+### Full inventory to port before any migration (not implemented by rt11)
+
+Current migrations contain 18 application tables: the original 15 plus three
+later tables. The reference adds three experiment-only tables, giving 21 total.
+The seven-table rt11 slice is deliberately not a replacement for this inventory.
+
+| Table | Required migration/reconciliation behavior |
+| --- | --- |
+| users | Preserve canonical IDs, ownership, disabled flags and Founder role; no password-hash weakening or email-based linking. |
+| sessions | Hashed handles, FK cleanup, expiry, recent authentication and account-wide revocation; lock/cap sessions transactionally. |
+| email_verification_tokens | Provider-managed actions; invalidate legacy live actions through an approved cutover rather than copying usable codes. |
+| password_reset_tokens | Same provider-action cutover and recovery rehearsal; no copied live reset credentials. |
+| subscriptions | Historical/disabled data only; preserve expiry/source without activating paid flows. |
+| payment_events | Preserve transaction uniqueness and idempotency in an inactive archive; no webhook activation. |
+| membership_claims | Preserve user ownership and transaction uniqueness/replay defenses; keep processing disabled. |
+| user_preferences | Validated JSON and existing retention choices/limits. |
+| saved_presets | Preserve preset/workflow kind, canonical owner, ordering/limits and validated JSON; no scheduled/background workflow expansion. |
+| tool_history | Retention/export/deletion and cross-user isolation; do not add permanent IP lookup storage. |
+| audit_logs | Preserve administrative and deletion evidence with bounded PII; never log credentials or silently trim history for quotas. |
+| rate_limits | Atomic distributed counters, server clock/TTL and server-selected limits; no client-controlled keys/limits. |
+| tool_availability | Fresh Admin authorization for global changes; preserve the free catalog. |
+| usage_daily | Atomic day/tool counters and composite uniqueness, without personal activity leakage. |
+| auth_identities | Preserve issuer+subject uniqueness and deleted/deleting tombstones. Current unique user_id constraint needs an explicit linking/cutover design; preserve genuine canonical IDs rather than applying this prototype's derived IDs. |
+| pro_access_requests | Partial unique pending request, status/decision idempotency, row locks and atomic approval/grant/audit. Not implemented by this minimal grant-only slice. |
+| pro_grants | Preserve 7d/30d/permanent invariants, request links, grantor/revoker, reasons and idempotency; fresh per-request checks. |
+| server_favourites | Owner/server composite key, curated server constraint and deletion/export. |
+| poc_sessions / poc_revocations / poc_metadata | Experiment-only session-auth-time, revocation and isolation semantics; do not mistake these for production migration authorization. |
+
+SQLite batches/triggers need reviewed Postgres transaction equivalents. A cutover
+must reconcile audit counts, FK ownership, all 18 table counts and Founder identity,
+with reversible routing and independently tested local restores. The deletion
+webhook/replay and cleanup paths need full porting; keeping payment handlers inert
+does not remove historical idempotency requirements. None of this copies genuine
+records or authorizes changing the genuine Founder account.
 
 Supabase setup approval was received and applied as recorded above. Separate Spark
 and Cloudflare reference creation were subsequently approved and completed.

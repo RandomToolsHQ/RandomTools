@@ -1,5 +1,52 @@
 # RandomTools implementation status
 
+## Phase 11.1 — expired-window cleanup checkpoint, 5 November 2026
+
+Resumed at 6:04 pm Brisbane, after the approved 12:25 pm test deadline and
+12:30 pm IAM deadline. The browser gateway approval was not used to extend either
+window: randomtools-phase11-supabase Pages/D1 were not created or deployed. Frozen
+ZIP SHA256 acbaaa885d97bf4f76fcf5543958c6ad37b206f64f5312bdfaec0d26bf4f334e
+was reverified. Actual hosted browser-cookie/proxy CPU validation remains blocked
+until a fresh bounded activation and synthetic test setup is approved.
+
+Cleanup completed under explicit cleanup-only Cloud Shell authorization:
+- Temporary IAM bindings, service account and custom roles removed; policy/account
+  baseline preserved, expired test token denied and remote token file removed.
+- Remaining two recorded Firebase users deleted; project console shows no users.
+- New reference D1 and rt11 Postgres each have zero users/sessions/grants/presets;
+  each retains three cleanup audit entries. Deleted identity tombstones/audit
+  evidence remain intentionally; persistent resources/schema were not deleted.
+- All five reference Worker secrets and both Pages secrets removed; same reference
+  placeholder redeployed as 36722da6-27d6-4505-bf1d-2432b59e1c73. Root returns
+  503/private,no-store. workers.dev/previews were not enabled.
+- All nine Supabase custom test secrets removed, original legacy JWT gate restored
+  ON, original disabled bundle restored (LF-normalized SHA256
+  c09a1d83e8f523301bb02a4f24aa6052359f17d5fea4a9de82c9f1cabc120bc0).
+  Anonymous function invocation returns 401. Default secrets unchanged.
+- Temporary local passwords/tokens/cookies/test keys removed after retaining
+  sanitized checks. Remote recovered password/manifest removed. No permanent key.
+- Cloud Shell terminal exited and tab closed. Managed GCE source credentials cannot
+  be revoked with gcloud auth revoke; VM shutdown is unavailable in its container.
+  Do not describe source-credential revocation/VM destruction as verified.
+
+Local rerun: 253/253 unit/integration tests, typecheck, lint, 15 Python operator
+guard tests pass; dependency audit zero findings. CI for frozen source 79939ad
+passed run 41947279152. Previous public/Clerk/Firebase deployment IDs and original
+Firebase D1 zero-fixture counts were rechecked unchanged. No spending, payments,
+public account launch, migration, main merge or public deployment changes.
+
+Hosted evidence retained: 312/312 accepted benchmark requests, 156/backend; direct
+Cloudflare CPU p50/p95/p99/max 7/10/19/21 ms, 5/156 above 10 ms. Supabase accepted
+latency p50/p95/p99/max 506/1249/3478/4930 ms versus Cloudflare
+665/876/1247/1532 ms. Supabase accepted-only CPU percentiles remain unmeasured.
+Recovery/password change and prior-session denials passed on both backends; real
+other-user deletion revoked access on both. No fresh measurements after expiry.
+Recommendation remains more testing required; retain existing hosting.
+
+Earlier chronological checkpoints below describe historical states, not current
+activation or cleanup status.
+
+
 ## Phase 11.1 — isolated reference preparation, 5 November 2026
 
 Matched hosted benchmark completed: 312/312 accepted requests, 156/backend, three

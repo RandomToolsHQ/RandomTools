@@ -40,9 +40,17 @@ async function call(op, body) {
   return { status: r.status, data: d };
 }
 const action = process.argv[2];
-if (action === "login") {
-  const sessions = {};
+if (action === "login" || action === "login-remaining") {
+  const previous =
+    action === "login-remaining"
+      ? JSON.parse(await fs.readFile(root + "/client-sessions.json", "utf8"))
+      : { project, sessions: {} };
+  if (previous.project !== project)
+    throw Error("Existing synthetic project required");
+  const sessions = previous.sessions;
+  const refreshed = [];
   for (const f of manifest.fixtures) {
+    if (action === "login-remaining" && f.label === "other") continue;
     const signed = await call("signInWithPassword", {
       email: f.email,
       password: f.password,
@@ -62,6 +70,7 @@ if (action === "login") {
       idToken: signed.data.idToken,
       refreshToken: signed.data.refreshToken,
     };
+    refreshed.push(f.label);
   }
   await fs.writeFile(
     root + "/client-sessions.json",
@@ -72,7 +81,7 @@ if (action === "login") {
     JSON.stringify({
       hosted: true,
       project,
-      verifiedLogins: Object.keys(sessions),
+      verifiedLogins: refreshed,
     }),
   );
 } else if (["disabled-denial", "revoked-denial"].includes(action)) {

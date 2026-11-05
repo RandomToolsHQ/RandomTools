@@ -105,6 +105,13 @@ def run():
             evidence.append({'label': f['label'], 'officialVerification': True,
                              'singleUseAction': True})
             time.sleep(2)
+        elif action == 'resend':
+            code = action_code(f, 'VERIFY_EMAIL')
+            successful('update', {'oobCode': code})
+            require(post('update', {'oobCode': code})[0] == 400, 'Resent action reused')
+            require(record(f).get('emailVerified') is True, 'Resent verification not reflected')
+            evidence.append({'label': f['label'], 'officialVerificationResend': True,
+                             'singleUseAction': True})
         elif action in ['disable', 'enable', 'revoke']:
             change = {'disableUser': action == 'disable'} if action != 'revoke' else {'validSince': str(int(time.time()))}
             successful('update', {'localId': f['uid'], **change}, True)
@@ -128,6 +135,11 @@ def run():
                     'Previous test password still accepted')
             signed = successful('signInWithPassword', {'email': f['email'], 'password': second, 'returnSecureToken': True})
             require(signed['localId'] == f['uid'], 'Changed password sign-in failed')
+            # Only a newly generated disposable Firebase client password, never
+            # Google source/admin credentials. Download privately for later tests.
+            recovered = ROOT / 'admin-recovered-client.json'
+            recovered.write_text(json.dumps({'project': PROJECT, 'uid': f['uid'], 'password': second}))
+            recovered.chmod(0o600)
             evidence.append({'label': f['label'], 'officialRecovery': True, 'resetActionSingleUse': True,
                              'passwordChange': True, 'previousCredentialDenied': True, 'newCredentialAccepted': True})
         elif action == 'delete':
